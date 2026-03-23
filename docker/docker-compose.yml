@@ -63,6 +63,7 @@ services:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
+      PMA_ABSOLUTE_URI: https://va-estriche.fakture.at/phpmyadmin/
       UPLOAD_LIMIT: 256M
     expose:
       - "80"
