@@ -1,0 +1,79 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: efk-va-estriche-nginx
+    ports:
+      - "127.0.0.1:8094:80"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ..:/var/www/html:ro
+      - efk-va-estriche-storage:/var/www/html/storage:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+    depends_on:
+      - app
+      - phpmyadmin
+    networks:
+      - efk-va-estriche-net
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile.prod
+    container_name: efk-va-estriche-app
+    volumes:
+      - efk-va-estriche-storage:/var/www/html/storage
+    env_file:
+      - .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - efk-va-estriche-net
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11.4.3
+    container_name: efk-va-estriche-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
+      MYSQL_DATABASE: ${DB_DATABASE:-efakture_va_estriche}
+      MYSQL_USER: ${DB_USERNAME:-efakture}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
+    ports:
+      - "127.0.0.1:3312:3306"
+    volumes:
+      - efk-va-estriche-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-uroot", "-p${DB_ROOT_PASSWORD}", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - efk-va-estriche-net
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: efk-va-estriche-phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
+      UPLOAD_LIMIT: 256M
+    expose:
+      - "80"
+    depends_on:
+      - db
+    networks:
+      - efk-va-estriche-net
+    restart: unless-stopped
+
+volumes:
+  efk-va-estriche-db-data:
+  efk-va-estriche-storage:
+
+networks:
+  efk-va-estriche-net:
+    driver: bridge

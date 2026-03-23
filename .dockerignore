@@ -1,0 +1,12 @@
+vendor/
+node_modules/
+.git/
+docker/
+.env
+.env.production
+.claude/
+storage/logs/*
+tests/
+phpunit.xml
+.editorconfig
+.gitattributes

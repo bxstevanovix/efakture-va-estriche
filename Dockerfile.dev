@@ -1,0 +1,66 @@
+FROM php:8.3-fpm-alpine
+
+ARG UID=1000
+ARG GID=1000
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    oniguruma-dev \
+    icu-dev \
+    libxml2-dev \
+    linux-headers
+
+# Configure and install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mysqli \
+        gd \
+        zip \
+        intl \
+        mbstring \
+        xml \
+        bcmath \
+        opcache \
+        pcntl
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Create user with matching UID/GID
+RUN addgroup -g ${GID} appgroup \
+    && adduser -u ${UID} -G appgroup -D -s /bin/bash appuser
+
+# PHP-FPM config for development
+RUN echo "php_admin_value[error_reporting] = E_ALL" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "php_admin_flag[display_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "php_admin_flag[display_startup_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
+
+# PHP config for development
+RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
+    && echo "memory_limit = 512M" >> "$PHP_INI_DIR/php.ini" \
+    && echo "upload_max_filesize = 64M" >> "$PHP_INI_DIR/php.ini" \
+    && echo "post_max_size = 64M" >> "$PHP_INI_DIR/php.ini" \
+    && echo "max_execution_time = 300" >> "$PHP_INI_DIR/php.ini"
+
+WORKDIR /var/www/html
+
+# Copy and setup entrypoint script
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Fix permissions for www-data to work with mounted volumes
+RUN chown -R appuser:appgroup /var/www/html
+
+USER appuser
+
+EXPOSE 9000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["php-fpm"]
