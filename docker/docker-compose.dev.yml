@@ -1,3 +1,5 @@
+name: efk-va-estriche
+
 services:
   nginx:
     image: nginx:alpine
