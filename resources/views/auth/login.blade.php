@@ -113,8 +113,8 @@
 		<div class="login-aside text-center d-none d-sm-flex flex-column flex-row-auto">
 			<div class="d-flex flex-column-auto flex-column pt-lg-40 pt-15">
 				<div class="text-center mb-4 pt-5">
-					<a><img width="420px" src="{{ asset('img/e-fakture-logo.jpg') }}" class="dark-login"  alt="E-fakture"></a>
-					<a><img width="420px" src="{{ asset('img/e-fakture-logo.jpg') }}" class="light-login" alt="E-fakture"></a>
+					<a><img width="250px" src="{{ asset('img/full-logo.png') }}" class="dark-login"  alt="E-fakture"></a>
+					<a><img width="250px" src="{{ asset('img/full-logo.png') }}" class="light-login" alt="E-fakture"></a>
 				</div>
 				{{-- <h3 style="font-size: 34px;" class="mb-2">E-FAKTURE</h3> --}}
 				<p>Easily create invoices, track your clients, and optimize your processes.<br> <strong>E-fakture</strong> gives you complete control over your business. <br> Learn more at <a style="color: var(--primary);" href="https://fakture.at" target="_blank">fakture.at</a></p>
