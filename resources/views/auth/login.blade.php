@@ -52,7 +52,7 @@
 
 <head>
     <!-- PAGE TITLE HERE -->
-	<title>E-faktura</title>
+	<title>E-faktura | VA Estriche</title>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="author" content="DexignZone">
