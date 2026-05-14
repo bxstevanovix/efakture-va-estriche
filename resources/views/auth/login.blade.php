@@ -185,11 +185,13 @@
                                         <button type="submit" class="btn btn-primary btn-block">{{ __('Log in') }}</button>
                                     </div>
 
+                                    {{-- Password reset link disabled.
                                     @if (Route::has('password.request'))
                                         <div class="mt-3 text-center">
                                             <a href="{{ route('password.request') }}">{{ __('Forgot your password?') }}</a>
                                         </div>
                                     @endif
+                                    --}}
                                 </form>
                             </div>
 						</div>
