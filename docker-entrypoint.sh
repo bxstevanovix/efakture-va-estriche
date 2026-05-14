@@ -11,4 +11,7 @@ if [ "$(id -u)" = "0" ]; then
     chown -R www-data:www-data /var/www/html/storage
 fi
 
+# kreiraj symlink da se ne radi ručno
+php artisan storage:link --force 2>/dev/null || true
+
 exec "$@"

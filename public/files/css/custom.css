@@ -1,0 +1,85 @@
+.error{
+    color: red;
+}
+
+.btn-group{
+    max-height: 45px !important;
+}
+
+.dataTables_length, .dataTables_info {
+    margin-left: 10px;
+}
+
+select[name="exampledb_length"] {
+    border-radius: 12px;
+    padding: 6px 12px;
+    text-align: center;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    font-weight: 500;
+    min-width: 20px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+
+select[name="exampledb_length"] option {
+    text-align: center;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    padding: 10px !important;
+}
+
+@media (max-width: 767px) {
+    #main-wrapper {
+        --dz-sidebar-width: min(18.25rem, 88vw);
+    }
+
+    .deznav .metismenu > li > a {
+        display: flex !important;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    .deznav .metismenu > li > a > i {
+        flex: 0 0 auto;
+    }
+
+    .deznav .metismenu > li > a .nav-text {
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .customer-invoices-page table.dataTable.display > tbody > tr > td,
+    .customer-invoices-page table.dataTable.row-border > tbody > tr > td,
+    .supplier-invoices-page table.dataTable.display > tbody > tr > td,
+    .supplier-invoices-page table.dataTable.row-border > tbody > tr > td,
+    .companies-page table.dataTable.display > tbody > tr > td,
+    .companies-page table.dataTable.row-border > tbody > tr > td,
+    .rechnung-page table.dataTable.display > tbody > tr > td,
+    .rechnung-page table.dataTable.row-border > tbody > tr > td,
+    .angebote-page table.dataTable.display > tbody > tr > td,
+    .angebote-page table.dataTable.row-border > tbody > tr > td {
+        border-top: 0 !important;
+        border-bottom: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .customer-invoices-page table.dataTable.display > tbody > tr:hover > *,
+    .supplier-invoices-page table.dataTable.display > tbody > tr:hover > *,
+    .companies-page table.dataTable.display > tbody > tr:hover > *,
+    .rechnung-page table.dataTable.display > tbody > tr:hover > *,
+    .angebote-page table.dataTable.display > tbody > tr:hover > * {
+        box-shadow: none !important;
+    }
+}
+
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

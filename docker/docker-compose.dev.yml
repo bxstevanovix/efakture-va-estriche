@@ -26,7 +26,7 @@ services:
     volumes:
       - ..:/var/www/html
     environment:
-      APP_NAME: "eFakture VA Estriche"
+      APP_NAME: "VA Estriche"
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: http://localhost:8094

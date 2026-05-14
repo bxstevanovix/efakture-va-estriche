@@ -1,9 +1,10 @@
 FROM php:8.4-fpm-alpine
 
+# Arguments for user
 ARG UID=1000
 ARG GID=1000
 
-# Install system dependencies
+# Install system dependencies + Node.js + Chromium
 RUN apk add --no-cache \
     git \
     curl \
@@ -15,9 +16,21 @@ RUN apk add --no-cache \
     oniguruma-dev \
     icu-dev \
     libxml2-dev \
-    linux-headers
+    linux-headers \
+    nodejs \
+    npm \
+    chromium \
+    libreoffice \
+    fontconfig \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-dejavu \
+    ttf-liberation \
+    ttf-freefont
 
-# Configure and install PHP extensions
+# PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
@@ -31,19 +44,19 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         opcache \
         pcntl
 
-# Install Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create user with matching UID/GID
+# Create user
 RUN addgroup -g ${GID} appgroup \
     && adduser -u ${UID} -G appgroup -D -s /bin/bash appuser
 
-# PHP-FPM config for development
+# PHP dev settings
 RUN echo "php_admin_value[error_reporting] = E_ALL" >> /usr/local/etc/php-fpm.d/www.conf \
     && echo "php_admin_flag[display_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf \
     && echo "php_admin_flag[display_startup_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
 
-# PHP config for development
+# PHP config
 RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
     && echo "memory_limit = 512M" >> "$PHP_INI_DIR/php.ini" \
     && echo "upload_max_filesize = 64M" >> "$PHP_INI_DIR/php.ini" \
@@ -52,11 +65,18 @@ RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
 
 WORKDIR /var/www/html
 
-# Copy and setup entrypoint script
+# Entry point
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# Fix permissions for www-data to work with mounted volumes
 RUN chown -R appuser:appgroup /var/www/html
+
+# Set environment variable for Browsershot to find Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV SOFFICE_PATH=/usr/bin/soffice
+
+# instaliraj jebeni puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+RUN npm install -g puppeteer
 
 USER appuser
 
