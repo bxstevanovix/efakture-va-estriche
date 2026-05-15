@@ -6,6 +6,12 @@
         $dateStart = '';
         $dateEnd = '';
     }
+
+    $priceInputValue = old('price');
+
+    if ($priceInputValue === null && $entity->price !== null) {
+        $priceInputValue = number_format((float) $entity->price, 2, ',', '');
+    }
 @endphp
 <style>
     .mb-3 {
@@ -240,13 +246,12 @@
                                     <div class="flex-grow-1">
                                         <div class="input-group">
                                             <input 
-                                                type="number" 
+                                                type="text" 
+                                                inputmode="decimal"
                                                 class="form-control @errorClass('price', 'is-invalid')" 
                                                 name="price" 
-                                                placeholder="0.00" 
-                                                value="{{ old('price', $entity->price) }}" 
-                                                min="1" 
-                                                max="99999999999999999999" 
+                                                placeholder="0,00" 
+                                                value="{{ $priceInputValue }}" 
                                                 required
                                             >
                                             <span class="input-group-text">EUR</span>

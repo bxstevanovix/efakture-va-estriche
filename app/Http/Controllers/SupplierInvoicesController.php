@@ -80,13 +80,14 @@ class SupplierInvoicesController extends Controller
     public function store()
     {   
         $request = $this->request;
+        $this->normalizeMoneyInput($request, 'price');
         
         $data = $request->validate([
             'id_invoice' => ['required', 'string', 'max:190'],
             'company' => ['required', 'integer', 'exists:firme,id'],
             'date_start' => ['required', 'string', 'date_format:d-m-Y'],
             'date_end' => ['required', 'string', 'date_format:d-m-Y', 'after_or_equal:date_start'],
-            'price' => ['required', 'numeric', 'min:1', 'max:999999.99'],
+            'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'text' => ['nullable', 'string', 'max:900'],
             'address' => ['nullable', 'string', 'max:900']
 
@@ -114,13 +115,14 @@ class SupplierInvoicesController extends Controller
     public function update(Entity $entity)
     {
         $request = $this->request;
+        $this->normalizeMoneyInput($request, 'price');
         
         $data = $request->validate([
             'id_invoice' => ['required', 'string', 'max:190'],
             'company' => ['required', 'integer', 'exists:firme,id'],
             'date_start' => ['required', 'string', 'date_format:d-m-Y'],
             'date_end' => ['required', 'string', 'date_format:d-m-Y', 'after_or_equal:date_start'],
-            'price' => ['required', 'numeric', 'min:1', 'max:999999.99'],
+            'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'text' => ['nullable', 'string', 'max:900'],
             'address' => ['nullable', 'string', 'max:900']
         ]);
@@ -133,6 +135,36 @@ class SupplierInvoicesController extends Controller
         $entity->save();
 
         return redirect()->route('supplier-invoices.index')->with('success', __('Faktura je uspešno izmenjena!'));
+    }
+
+    private function normalizeMoneyInput(Request $request, string $field): void
+    {
+        if (!$request->has($field)) {
+            return;
+        }
+
+        $value = trim((string) $request->input($field));
+
+        if ($value === '') {
+            return;
+        }
+
+        $value = preg_replace('/\s+/', '', $value);
+        $lastComma = strrpos($value, ',');
+        $lastDot = strrpos($value, '.');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            if ($lastComma > $lastDot) {
+                $value = str_replace('.', '', $value);
+                $value = str_replace(',', '.', $value);
+            } else {
+                $value = str_replace(',', '', $value);
+            }
+        } elseif ($lastComma !== false) {
+            $value = str_replace(',', '.', $value);
+        }
+
+        $request->merge([$field => $value]);
     }
     
     public function delete(Entity $entity)
