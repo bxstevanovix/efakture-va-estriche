@@ -10,6 +10,7 @@ use ZipArchive;
 
 class DocxAngebotService
 {
+    private const DEFAULT_BANK_DETAILS = 'Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507';
     private const TWIPS_PER_MM = 56.6929133858;
     private const EMU_PER_PIXEL = 9525;
     private const TABLE_WIDTH = 10092;
@@ -44,13 +45,14 @@ class DocxAngebotService
         $logoPath = public_path('img/full-logo.png');
         $hasLogo = is_file($logoPath);
         $showPageNumbers = ! empty($data['show_page_numbers']);
+        $bankDetails = trim((string) ($data['bank_details'] ?? '')) ?: self::DEFAULT_BANK_DETAILS;
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypes($hasLogo));
         $zip->addFromString('_rels/.rels', $this->rootRels());
         $zip->addFromString('word/_rels/document.xml.rels', $this->documentRels($hasLogo));
         $zip->addFromString('word/styles.xml', $this->styles());
         $zip->addFromString('word/header1.xml', $this->header($hasLogo));
-        $zip->addFromString('word/footer1.xml', $this->footer($showPageNumbers));
+        $zip->addFromString('word/footer1.xml', $this->footer($showPageNumbers, $bankDetails));
         $zip->addFromString('word/document.xml', $this->document($data, $hasLogo));
 
         if ($hasLogo) {
@@ -810,12 +812,12 @@ class DocxAngebotService
 </w:hdr>';
     }
 
-    private function footer(bool $showPageNumbers): string
+    private function footer(bool $showPageNumbers, string $bankDetails): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   ' . ($showPageNumbers ? $this->pageNumberParagraph() : $this->paragraph('', ['after' => 0])) . '
-  ' . $this->paragraph('Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT32 4715 0120 1679 0000', [
+  ' . $this->paragraph($bankDetails, [
             'align' => 'center',
             'size' => 16,
             'before' => 0,
@@ -922,6 +924,7 @@ class DocxAngebotService
             'ausfuehrungszeit' => 'KW: 32/25',
             'spacing_top' => 20,
             'use_tax' => false,
+            'bank_details' => self::DEFAULT_BANK_DETAILS,
             'note_html' => '',
             'items' => [
                 ['Zementestrich E 300, etc., etc. etc.', '2.000,00 m²', 'Pauschale', '100.000,00'],

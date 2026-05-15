@@ -170,35 +170,44 @@
                                 <i class="fa fa-plus me-1"></i>Hinzufügen
                             </button>
 
-                            <div class="row angebot-field-row">
-                                <div class="col-md-2 mb-3 discount-percent-field">
+                            <div class="row angebot-field-row financial-controls-row">
+                                <div class="col-md-3 mb-3 bank-field">
+                                    <label for="bank_details" class="form-label">Banka</label>
+                                    <select id="bank_details" class="form-control" autocomplete="off">
+                                        <option value="Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507" selected>Bank Austria</option>
+                                        <option value="Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT50 4715 0119 8151 0000">Volksbank</option>
+                                        <option value="Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT23 4715 0119 8151 0001">Volksbank Miete</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3 discount-percent-field">
                                     <label for="discount_percent" class="form-label">Nachlass %</label>
                                     <input type="number" id="discount_percent" class="form-control text-center" value="0" min="0" step="1" autocomplete="off">
                                 </div>
 
-                                <div class="col-md-2 mb-3 discount-fixed-field">
+                                <div class="col-md-3 mb-3 discount-fixed-field">
                                     <label for="discount_fixed" class="form-label">Nachlass Pauschale €</label>
                                     <input type="number" id="discount_fixed" class="form-control text-center" value="0" min="0" step="1" autocomplete="off">
                                 </div>
 
-                                <div class="col-md-2 mb-3 deckungs-field">
+                                <div class="col-md-3 mb-3 deckungs-field">
                                     <label for="deckungsrucklass_percent" class="form-label">Deckungsrücklass %</label>
                                     <input type="number" id="deckungsrucklass_percent" class="form-control text-center" value="0" min="0" step="1" autocomplete="off">
                                 </div>
 
-                                <div class="col-md-2 mb-3 abzug-label-field">
+                                <div class="col-md-3 mb-3 abzug-label-field">
                                     <label for="abzug_tr_label" class="form-label">Abz. TR Text</label>
                                     <input type="text" id="abzug_tr_label" class="form-control text-center" value="Abz. TR 1" maxlength="40" autocomplete="off">
                                 </div>
 
-                                <div class="col-md-2 mb-3 abzug-value-field">
+                                <div class="col-md-3 mb-3 abzug-value-field">
                                     <label for="abzug_tr1" class="form-label">Abz. TR €</label>
                                     <input type="number" id="abzug_tr1" class="form-control text-center" value="0" min="0" step="1" autocomplete="off">
                                 </div>
 
-                                <div class="col-md-2 mb-3 tax-field">
+                                <div class="col-md-3 mb-3 tax-field">
                                     <div class="form-check mt-md-4 pt-md-2">
-                                        <input type="checkbox" id="use_tax" class="form-check-input" autocomplete="off">
+                                        <input type="checkbox" id="use_tax" class="form-check-input" autocomplete="off" style="margin-bottom: 10px;">
                                         <label class="form-check-label" for="use_tax">20% MwSt</label>
                                     </div>
                                 </div>

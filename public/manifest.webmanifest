@@ -1,7 +1,7 @@
 {
-  "name": "E-fakture",
-  "short_name": "E-fakture",
-  "description": "E-fakture dashboard za upravljanje fakturama.",
+  "name": "E-faktura",
+  "short_name": "E-faktura",
+  "description": "E-faktura dashboard za upravljanje fakturama.",
   "id": "/dashboard",
   "start_url": "/dashboard",
   "scope": "/",

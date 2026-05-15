@@ -393,6 +393,7 @@
 			const previewPages = document.getElementById("previewPages");
 			const itemsContainer = document.getElementById("items");
 			const createButton = document.getElementById("createInvoice");
+			const defaultBankDetails = 'Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507';
 			let itemIndex = 1;
 
 			document.getElementById("openModal").onclick = () => {
@@ -453,7 +454,8 @@
 				"#abzug_tr1",
 				"#abzug_tr_label",
 				"#use_tax",
-				"#spacing_input"
+				"#spacing_input",
+				"#bank_details"
 			].join(',')).forEach(input => {
 				input.addEventListener("input", updatePreview);
 				input.addEventListener("change", updatePreview);
@@ -515,6 +517,7 @@
 					deckungsPercent: parseNumber(valueOf('deckungsrucklass_percent')),
 					abzugTr1: parseNumber(valueOf('abzug_tr1')),
 					abzugTrLabel: valueOf('abzug_tr_label') || 'Abz. TR 1',
+					bankDetails: selectedBankDetails(),
 					useTax: document.getElementById('use_tax').checked
 				};
 			}
@@ -555,7 +558,7 @@
 						</table>` : ''}
 					</div>
 					<div class="invoice-footer">
-						Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT32 4715 0120 1679 0000
+						${escapeHtml(data.bankDetails)}
 						<span class="page-counter"></span>
 					</div>
 				`;
@@ -792,6 +795,10 @@
 				return document.getElementById(id)?.value || '';
 			}
 
+			function selectedBankDetails() {
+				return valueOf('bank_details') || defaultBankDetails;
+			}
+
 			function parseNumber(value) {
 				let normalized = String(value || '').replace(/[€\s]/g, '').trim();
 
@@ -887,6 +894,7 @@
 						abzug_tr1: data.abzugTr1,
 						abzug_tr_label: data.abzugTrLabel,
 						spacing_top: data.spacing,
+						bank_details: data.bankDetails,
 						html: a4Wrapper.innerHTML,
 						items: items,
 						_token: $('meta[name="csrf-token"]').attr('content')

@@ -18,8 +18,8 @@
 <link rel="shortcut icon" type="image/svg+xml" href="{{ asset('f-circle.svg') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('f-circle.svg') }}">
 <link rel="apple-touch-icon-precomposed" sizes="180x180" href="{{ asset('f-circle.svg') }}">
-<meta name="application-name" content="E-fakture">
-<meta name="apple-mobile-web-app-title" content="E-fakture">
+<meta name="application-name" content="E-faktura">
+<meta name="apple-mobile-web-app-title" content="E-faktura">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">

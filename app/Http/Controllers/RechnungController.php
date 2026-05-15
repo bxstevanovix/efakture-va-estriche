@@ -106,6 +106,7 @@ class RechnungController extends Controller
             'abzug_tr1' => 'nullable',
             'abzug_tr_label' => 'nullable|string|max:40',
             'spacing_top' => 'nullable|integer|min:0|max:160',
+            'bank_details' => ['nullable', 'string', 'max:255', Rule::in($this->allowedBankDetails())],
             'items' => 'nullable|array',
             'items.*.name' => 'nullable|string|max:255',
             'items.*.qty' => 'nullable',
@@ -646,6 +647,7 @@ class RechnungController extends Controller
             'spacing_top' => (int) ($data['spacing_top'] ?? 20),
             'use_tax' => $useTax,
             'show_page_numbers' => $showPageNumbers,
+            'bank_details' => $this->bankDetails($data),
             'note_html' => (string) ($data['invoice_note'] ?? ''),
             'items' => collect($items)->map(fn ($item) => [
                 $item['name'] ?? $item[0] ?? '',
@@ -684,6 +686,29 @@ class RechnungController extends Controller
         $label = trim((string) ($data['abzug_tr_label'] ?? ''));
 
         return $label !== '' ? $label : 'Abz. TR 1';
+    }
+
+    private function bankDetails(array $data): string
+    {
+        $bankDetails = trim((string) ($data['bank_details'] ?? ''));
+
+        return in_array($bankDetails, $this->allowedBankDetails(), true)
+            ? $bankDetails
+            : $this->defaultBankDetails();
+    }
+
+    private function defaultBankDetails(): string
+    {
+        return 'Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507';
+    }
+
+    private function allowedBankDetails(): array
+    {
+        return [
+            $this->defaultBankDetails(),
+            'Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT50 4715 0119 8151 0000',
+            'Bankverbindung: Volksbank Niederösterreich AG, BIC: VBOEATWWNOM, IBAN: AT23 4715 0119 8151 0001',
+        ];
     }
 
     private function formatMoney(float $value): string

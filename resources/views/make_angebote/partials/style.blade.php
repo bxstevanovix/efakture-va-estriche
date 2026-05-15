@@ -92,6 +92,34 @@
         white-space: nowrap;
     }
 
+    .financial-controls-row {
+        row-gap: 2px;
+    }
+
+    .financial-controls-row .form-label {
+        min-height: 34px;
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 6px;
+        line-height: 1.2;
+    }
+
+    .bank-field select.form-control {
+        min-height: 38px;
+        cursor: pointer;
+    }
+
+    .tax-field .form-check {
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 34px !important;
+        padding-top: 0 !important;
+        padding-left: 0;
+    }
+
     .item-row {
         width: 100%;
         display: grid;

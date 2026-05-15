@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
     <head>
-        <title>E-fakture</title>
+        <title>E-faktura | VA Estriche</title>
         @include('_layouts.partials.head')
     </head>
     <body>
@@ -12,7 +12,7 @@
                 <div class="item3"></div>
                 <div class="item4"></div>
             </div>
-            <h3 class="dz-loader-h">E-fakture</h3>
+            <h3 class="dz-loader-h">E-faktura</h3>
         </div>
 
         <div id="main-wrapper">
@@ -28,7 +28,7 @@
 
             <div class="footer">
                 <div class="copyright">
-                <p>Copyright © Designed &amp; Developed by <a href="https://www.fakture.at/" target="_blank">e-fakture</a> <span class="current-year">2026</span></p>
+                <p>Copyright © Designed &amp; Developed by <a href="https://www.fakture.at/" target="_blank">e-faktura</a> <span class="current-year">2026</span></p>
                 </div>
             </div>
         </div>
