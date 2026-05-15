@@ -39,7 +39,7 @@ class SupplierInvoicesController extends Controller
                             ['entity' => $entity]);
             })
             ->editColumn('debt', function ($entity) {
-                return $entity-> debt . ' ' . $entity->currency;
+                return  '€ ' . $entity->price;
             })->editColumn('company', function ($entity) {
                 $company = Firma::withTrashed()->where('id', $entity->company)->first();
 
@@ -378,11 +378,8 @@ class SupplierInvoicesController extends Controller
                             ['entity' => $entity]);
             })
             ->editColumn('price', function ($entity) {
-                if ($entity->price_part > 0) {
-                    return $entity->price . ' (<span class="price-part-green">' . $entity->price_part . '</span>) ' . $entity->currency;
-                } else {
-                    return $entity->price . ' ' . $entity->currency;
-                }
+               
+                return  '€ ' . $entity->price;
                 
             })->editColumn('company', function ($entity) {
                 $company = Firma::where('id', $entity->company)->first();    
