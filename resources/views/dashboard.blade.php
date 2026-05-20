@@ -38,6 +38,57 @@
         border-radius: 8px;
     }
 
+    .dashboard-page .dashboard-hero-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .dashboard-page .dashboard-year-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid #ececec;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .dashboard-page .dashboard-year-label {
+        color: #7e7e7e;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        padding: 0 8px 0 6px;
+    }
+
+    .dashboard-page .dashboard-year-pill {
+        min-width: 62px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: #7e7e7e;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .dashboard-page .dashboard-year-pill:hover {
+        color: var(--primary);
+        background: rgba(136, 108, 192, 0.08);
+    }
+
+    .dashboard-page .dashboard-year-pill.is-active {
+        color: #fff;
+        background: var(--primary);
+        box-shadow: 0 6px 16px rgba(136, 108, 192, 0.2);
+    }
+
     .dashboard-page .metric-card {
         height: calc(100% - 1.875rem);
     }
@@ -206,6 +257,10 @@
     }
 
     @media (max-width: 991px) {
+        .dashboard-page .dashboard-hero-actions {
+            align-items: flex-start;
+        }
+
         .dashboard-date {
             justify-content: flex-start;
         }
@@ -244,15 +299,31 @@
             <div class="row align-items-center">
                 <div class="col-lg-7">
                     <h2 class="mb-1">@lang('Finansijski pregled faktura')</h2>
-                    <span>@lang('Kratak pregled naplate, obaveza, otvorenih rokova i mesečnog toka novca.')</span>
+                    <span>@lang('Kratak pregled naplate, obaveza, otvorenih rokova i mesečnog toka novca za izabranu godinu.')</span>
                 </div>
-                <div class="col-lg-5 mt-3 mt-lg-0 text-lg-end">
-                    <a href="{{ route('customer-invoices.create') }}" class="btn btn-primary btn-sm me-2 mb-2">
-                        <i class="fa fa-plus me-1"></i>@lang('Nova izlazna faktura')
-                    </a>
-                    <a href="{{ route('customer-invoices.reports') }}" class="btn btn-outline-primary btn-sm mb-2">
-                        <i class="fa fa-chart-line me-1"></i>@lang('Izveštaji')
-                    </a>
+                <div class="col-lg-5 mt-3 mt-lg-0">
+                    <div class="dashboard-hero-actions">
+                        <div class="dashboard-year-switch" aria-label="@lang('Izbor godine')">
+                            <span class="dashboard-year-label">@lang('Godina')</span>
+                            @foreach ($dashboardYears as $year)
+                                <a
+                                    href="{{ route('dashboard', ['year' => $year]) }}"
+                                    class="dashboard-year-pill {{ $year === $selectedYear ? 'is-active' : '' }}"
+                                    @if ($year === $selectedYear) aria-current="page" @endif
+                                >
+                                    {{ $year }}
+                                </a>
+                            @endforeach
+                        </div>
+                        <div>
+                            <a href="{{ route('customer-invoices.create') }}" class="btn btn-primary btn-sm me-2 mb-2">
+                                <i class="fa fa-plus me-1"></i>@lang('Nova izlazna faktura')
+                            </a>
+                            <a href="{{ route('customer-invoices.reports') }}" class="btn btn-outline-primary btn-sm mb-2">
+                                <i class="fa fa-chart-line me-1"></i>@lang('Izveštaji')
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -811,9 +882,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 const dateInput = document.getElementById('date_start');
 const dateInput1 = document.getElementById('date_start1');
+const selectedDashboardYear = Number(@json($selectedYear));
 const today = new Date();
-dateInput.value = formatDate(today);
-dateInput1.value = formatDate(today);
+const initialDashboardDate = dateInSelectedYear(selectedDashboardYear, today);
+dateInput.value = formatDate(initialDashboardDate);
+dateInput1.value = formatDate(initialDashboardDate);
 
 var blade = {
     datatablesAjaxCustomer: "{{ route('datatable_customers') }}",
@@ -825,6 +898,13 @@ function formatDate(date) {
     const month = ("0" + (date.getMonth() + 1)).slice(-2);
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
+}
+
+function dateInSelectedYear(year, sourceDate) {
+    const lastDayInMonth = new Date(year, sourceDate.getMonth() + 1, 0).getDate();
+    const day = Math.min(sourceDate.getDate(), lastDayInMonth);
+
+    return new Date(year, sourceDate.getMonth(), day);
 }
 
 function readPickerDate(input) {
@@ -875,6 +955,7 @@ var table = $('#entity-list-table').DataTable({
         type: "post",
         data: function(d) {
             d.date_start = $('#date_start').val();
+            d.year = selectedDashboardYear;
         }
     },
     columns: [
@@ -901,6 +982,7 @@ var table1 = $('#entity-list-table1').DataTable({
         type: "post",
         data: function(d) {
             d.date_start1 = $('#date_start1').val();
+            d.year = selectedDashboardYear;
         }
     },
     columns: [
