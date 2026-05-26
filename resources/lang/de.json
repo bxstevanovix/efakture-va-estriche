@@ -311,7 +311,13 @@
   "Dokumenti": "Dokumente",
   "Nema dokumenata": "Keine Dokumente",
   "Greška!": "Fehler!",
-  "Došlo je do greške prilikom plaćanja fakture.": "Beim Bezahlen der Rechnung ist ein Fehler aufgetreten."
+  "Došlo je do greške prilikom plaćanja fakture.": "Beim Bezahlen der Rechnung ist ein Fehler aufgetreten.",
+  "Pošalji u Izlazne račune": "In Ausgangsrechnungen verschieben",
+  "Broj fakture već postoji u izlaznim fakturama!": "Die Rechnungsnummer existiert bereits in den Ausgangsrechnungen!",
+  "Firma nije automatski pronađena. Izaberite firmu prije snimanja.": "Die Firma wurde nicht automatisch gefunden. Bitte wählen Sie vor dem Speichern eine Firma aus.",
+  "PDF za ovaj račun nije pronađen. Faktura će biti kreirana bez PDF dokumenta.": "Die PDF für diese Rechnung wurde nicht gefunden. Die Rechnung wird ohne PDF-Dokument erstellt.",
+  "Već je poslato u Ausgangsrechnungen": "Bereits in Ausgangsrechnungen verschoben",
+  "Podaci za račun nisu mogli biti učitani.": "Die Rechnungsdaten konnten nicht geladen werden."
 
 
 

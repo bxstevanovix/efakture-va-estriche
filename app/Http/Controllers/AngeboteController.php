@@ -13,9 +13,8 @@ use Carbon\Carbon;
 use App\Models\Beschreibung;
 use App\Models\Firma;
 use App\Services\DocxAngebotService;
+use App\Services\LibreOfficePdfConverter;
 use Illuminate\Validation\Rule;
-use Symfony\Component\Process\ExecutableFinder;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 class AngeboteController extends Controller 
@@ -454,12 +453,6 @@ class AngeboteController extends Controller
         string $rechnungNr,
         string $filename
     ): string {
-        $soffice = $this->findSofficeBinary();
-
-        if (! $soffice) {
-            throw new \RuntimeException('LibreOffice/soffice nije pronađen.');
-        }
-
         $workDir = storage_path('app/docx-angebote/' . Str::uuid());
 
         if (! is_dir($workDir)) {
@@ -469,7 +462,7 @@ class AngeboteController extends Controller
         $docxName = pathinfo($filename, PATHINFO_FILENAME) . '.docx';
         $docxPath = $workDir . '/' . $docxName;
         $pdfPath = $workDir . '/' . pathinfo($docxName, PATHINFO_FILENAME) . '.pdf';
-        $profileDir = $workDir . '/lo-profile';
+        $pdfConverter = app(LibreOfficePdfConverter::class);
 
         try {
             $docxData = $this->buildDocxOfferData(
@@ -481,18 +474,14 @@ class AngeboteController extends Controller
             );
 
             app(DocxAngebotService::class)->createFromData($docxPath, $docxData);
-            $this->convertDocxToPdf($soffice, $profileDir, $workDir, $docxPath, $pdfPath);
+            $pdfConverter->convert($docxPath, $workDir, $pdfPath);
             $pdf = file_get_contents($pdfPath);
 
             if ($this->countPdfPages($pdf) > 1) {
                 $docxData['show_page_numbers'] = true;
                 app(DocxAngebotService::class)->createFromData($docxPath, $docxData);
 
-                if (file_exists($pdfPath)) {
-                    unlink($pdfPath);
-                }
-
-                $this->convertDocxToPdf($soffice, $profileDir, $workDir, $docxPath, $pdfPath);
+                $pdfConverter->convert($docxPath, $workDir, $pdfPath);
                 $pdf = file_get_contents($pdfPath);
             }
         } finally {
@@ -500,26 +489,6 @@ class AngeboteController extends Controller
         }
 
         return $pdf;
-    }
-
-    private function convertDocxToPdf(string $soffice, string $profileDir, string $workDir, string $docxPath, string $pdfPath): void
-    {
-        $process = new Process([
-            $soffice,
-            '-env:UserInstallation=file://' . $profileDir,
-            '--headless',
-            '--convert-to',
-            'pdf',
-            '--outdir',
-            $workDir,
-            $docxPath,
-        ]);
-        $process->setTimeout(60);
-        $process->run();
-
-        if (! $process->isSuccessful() || ! file_exists($pdfPath)) {
-            throw new \RuntimeException($process->getErrorOutput() ?: 'DOCX to PDF konverzija nije uspjela.');
-        }
     }
 
     private function userFacingOfferError(Throwable $exception): string
@@ -669,24 +638,6 @@ class AngeboteController extends Controller
                 'total' => $this->formatMoney($totalValue),
             ],
         ];
-    }
-
-    private function findSofficeBinary(): ?string
-    {
-        $candidates = array_filter([
-            env('SOFFICE_PATH'),
-            (new ExecutableFinder())->find('soffice'),
-            (new ExecutableFinder())->find('libreoffice'),
-            '/Applications/LibreOffice.app/Contents/MacOS/soffice',
-        ]);
-
-        foreach ($candidates as $candidate) {
-            if (is_executable($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
     }
 
     private function abzugTrLabel(array $data): string

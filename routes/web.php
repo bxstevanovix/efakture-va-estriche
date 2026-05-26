@@ -107,6 +107,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/datatable', [RechnungController::class, 'datatable'])->name('datatable');
         Route::post('/create', [RechnungController::class, 'save'])->name('store');
         Route::post('/{entity}/delete', [RechnungController::class, 'delete'])->name('delete');
+        Route::get('/{entity}/customer-invoice-data', [RechnungController::class, 'customerInvoiceData'])->name('customer_invoice_data');
         Route::get('/pdf/{id}', [RechnungController::class, 'pdfFile'])->name('pdf');
         Route::get('/view/{id}', [RechnungController::class, 'viewPdf'])->name('view');
         // Autocomplete za firma i adress

@@ -2,6 +2,24 @@
     color: red;
 }
 
+html.preloader-suppressed #preloader {
+    display: none !important;
+}
+
+html.preloader-suppressed #main-wrapper {
+    opacity: 1 !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+textarea:focus,
+select:focus {
+    border-color: rgba(91, 70, 178, 0.62);
+    box-shadow: 0 0 0 4px rgba(91, 70, 178, 0.12);
+    outline: 0;
+}
+
 .btn-group{
     max-height: 45px !important;
 }
@@ -30,6 +48,11 @@ select[name="exampledb_length"] option {
 
 .dataTables_wrapper .dataTables_length select {
     padding: 10px !important;
+}
+
+.deznav .metismenu > li:hover > a svg [fill="none"],
+.deznav .metismenu > li:focus > a svg [fill="none"] {
+    fill: none !important;
 }
 
 @media (max-width: 767px) {
@@ -82,4 +105,8 @@ select[name="exampledb_length"] option {
   select {
     font-size: 16px !important;
   }
+}
+
+body[data-theme-version="dark"] .deznav .nav-text {
+    color: #fff !important;
 }

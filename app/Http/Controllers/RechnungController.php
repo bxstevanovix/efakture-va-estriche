@@ -13,10 +13,10 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Firma;
 use App\Models\Beschreibung;
+use App\Models\CustomerInvoice;
 use App\Services\DocxAngebotService;
+use App\Services\LibreOfficePdfConverter;
 use Illuminate\Validation\Rule;
-use Symfony\Component\Process\ExecutableFinder;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 class RechnungController extends Controller 
@@ -32,7 +32,10 @@ class RechnungController extends Controller
     public function index()
     {   
         $firme = Firma::orderBy('name')->get();
-        return view('make_rechnung.index', compact('firme'));
+        $companies = $firme;
+        $customerInvoiceEntity = new CustomerInvoice();
+
+        return view('make_rechnung.index', compact('firme', 'companies', 'customerInvoiceEntity'));
     }
     
     /*
@@ -54,8 +57,10 @@ class RechnungController extends Controller
             })
 
             ->addColumn('actions', function ($entity) {
+                $hasCustomerInvoice = CustomerInvoice::where('id_invoice', $entity->id_invoice)->exists();
+
                 return view('make_rechnung.partials.table.actions', 
-                            ['entity' => $entity]);
+                            ['entity' => $entity, 'hasCustomerInvoice' => $hasCustomerInvoice]);
             })
             ->editColumn('price', function ($entity) {
                 return '€ ' . $entity->formatted_price;
@@ -263,6 +268,23 @@ class RechnungController extends Controller
         ]);
     }
 
+    public function customerInvoiceData(Entity $entity)
+    {
+        return response()->json([
+            'id' => $entity->id,
+            'id_invoice' => $entity->id_invoice,
+            'company' => $this->matchingFirmaId($entity->firma),
+            'company_name' => $entity->firma,
+            'address' => $this->customerInvoiceAddress($entity),
+            'date_start' => $this->formatCustomerInvoiceDate($entity->date_start),
+            'date_end' => '',
+            'price' => number_format((float) $entity->price, 2, ',', ''),
+            'text' => $this->plainTextFromHtml($entity->note),
+            'pdf_available' => filled($entity->invoice_url)
+                && Storage::disk('public')->exists($this->normalizePublicPdfPath($entity->invoice_url)),
+        ]);
+    }
+
     public function pdfFile($id)
     {
         $rechnung = Entity::findOrFail($id);
@@ -291,6 +313,49 @@ class RechnungController extends Controller
         }
 
         return $path;
+    }
+
+    private function matchingFirmaId(?string $firmaName): ?int
+    {
+        $firmaName = trim((string) $firmaName);
+
+        if ($firmaName === '') {
+            return null;
+        }
+
+        $firma = Firma::where('name', $firmaName)->first()
+            ?? Firma::whereRaw('LOWER(TRIM(name)) = ?', [Str::lower($firmaName)])->first();
+
+        return $firma?->id;
+    }
+
+    private function customerInvoiceAddress(Entity $rechnung): string
+    {
+        if (filled($rechnung->bvh)) {
+            return trim((string) $rechnung->bvh);
+        }
+
+        return collect([$rechnung->adress, $rechnung->ort])
+            ->filter(fn ($value) => filled($value))
+            ->implode(', ');
+    }
+
+    private function formatCustomerInvoiceDate($date): string
+    {
+        if (! $date) {
+            return '';
+        }
+
+        return Carbon::parse($date)->format('d-m-Y');
+    }
+
+    private function plainTextFromHtml(?string $value): string
+    {
+        $value = (string) $value;
+        $value = preg_replace('/<\s*br\s*\/?>/i', "\n", $value);
+        $value = preg_replace('/<\/\s*p\s*>/i', "\n", $value);
+
+        return trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
     
     public function delete(Entity $entity)
@@ -447,12 +512,6 @@ class RechnungController extends Controller
         string $rechnungNr,
         string $filename
     ): string {
-        $soffice = $this->findSofficeBinary();
-
-        if (! $soffice) {
-            throw new \RuntimeException('LibreOffice/soffice nije pronađen. Provjeri SOFFICE_PATH ili instalaciju LibreOffice-a u Docker containeru.');
-        }
-
         $workDir = storage_path('app/docx-rechnungen/' . Str::uuid());
 
         if (! is_dir($workDir)) {
@@ -462,24 +521,20 @@ class RechnungController extends Controller
         $docxName = pathinfo($filename, PATHINFO_FILENAME) . '.docx';
         $docxPath = $workDir . '/' . $docxName;
         $pdfPath = $workDir . '/' . pathinfo($docxName, PATHINFO_FILENAME) . '.pdf';
-        $profileDir = $workDir . '/lo-profile';
+        $pdfConverter = app(LibreOfficePdfConverter::class);
 
         try {
             $docxData = $this->buildDocxRechnungData($data, $items, $totalValue, $rechnungNr, false);
 
             app(DocxAngebotService::class)->createFromData($docxPath, $docxData);
-            $this->convertDocxToPdf($soffice, $profileDir, $workDir, $docxPath, $pdfPath);
+            $pdfConverter->convert($docxPath, $workDir, $pdfPath);
             $pdf = file_get_contents($pdfPath);
 
             if ($this->countPdfPages($pdf) > 1) {
                 $docxData['show_page_numbers'] = true;
                 app(DocxAngebotService::class)->createFromData($docxPath, $docxData);
 
-                if (file_exists($pdfPath)) {
-                    unlink($pdfPath);
-                }
-
-                $this->convertDocxToPdf($soffice, $profileDir, $workDir, $docxPath, $pdfPath);
+                $pdfConverter->convert($docxPath, $workDir, $pdfPath);
                 $pdf = file_get_contents($pdfPath);
             }
         } finally {
@@ -487,30 +542,6 @@ class RechnungController extends Controller
         }
 
         return $pdf;
-    }
-
-    private function convertDocxToPdf(string $soffice, string $profileDir, string $workDir, string $docxPath, string $pdfPath): void
-    {
-        $process = new Process([
-            $soffice,
-            '-env:UserInstallation=file://' . $profileDir,
-            '--headless',
-            '--convert-to',
-            'pdf',
-            '--outdir',
-            $workDir,
-            $docxPath,
-        ]);
-        $process->setTimeout(60);
-        $process->run();
-
-        if (! $process->isSuccessful() || ! file_exists($pdfPath)) {
-            $details = trim($process->getErrorOutput() ?: $process->getOutput());
-            $message = 'DOCX to PDF konverzija nije uspjela preko LibreOffice-a'
-                . ' (' . basename($soffice) . ', exit code ' . ($process->getExitCode() ?? 'n/a') . ').';
-
-            throw new \RuntimeException(trim($message . ' ' . $details));
-        }
     }
 
     private function userFacingRechnungError(Throwable $exception): string
@@ -661,24 +692,6 @@ class RechnungController extends Controller
                 'total' => $this->formatMoney($totalValue),
             ],
         ];
-    }
-
-    private function findSofficeBinary(): ?string
-    {
-        $candidates = array_filter([
-            env('SOFFICE_PATH'),
-            (new ExecutableFinder())->find('soffice'),
-            (new ExecutableFinder())->find('libreoffice'),
-            '/Applications/LibreOffice.app/Contents/MacOS/soffice',
-        ]);
-
-        foreach ($candidates as $candidate) {
-            if (is_executable($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
     }
 
     private function abzugTrLabel(array $data): string

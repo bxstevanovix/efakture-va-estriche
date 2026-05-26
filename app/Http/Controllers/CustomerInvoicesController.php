@@ -11,7 +11,10 @@ use App\Http\Resources\JsonResource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use App\Models\Firma;
- use App\Models\InvoicePdf;
+use App\Models\InvoicePdf;
+use App\Models\Rechnung;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class CustomerInvoicesController extends Controller 
 {
@@ -84,15 +87,27 @@ class CustomerInvoicesController extends Controller
         $this->normalizeMoneyInput($request, 'price');
         
         $data = $request->validate([
-            'id_invoice' => ['required', 'string', 'max:190'],
+            'id_invoice' => [
+                'required',
+                'string',
+                'max:190',
+                Rule::unique('customer_invoices', 'id_invoice')->whereNull('deleted_at'),
+            ],
             'company' => ['required', 'integer', 'exists:firme,id'],
             'date_start' => ['required', 'string', 'date_format:d-m-Y'],
             'date_end' => ['required', 'string', 'date_format:d-m-Y', 'after_or_equal:date_start'],
             'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'text' => ['nullable', 'string', 'max:900'],
-            'address' => ['nullable', 'string', 'max:900']
+            'address' => ['nullable', 'string', 'max:900'],
+            'source_rechnung_id' => ['nullable', 'integer', 'exists:rechnungen,id'],
 
+        ], [
+            'id_invoice.unique' => __('Broj fakture već postoji u izlaznim fakturama!'),
         ]);
+
+        $sourceRechnungId = $data['source_rechnung_id'] ?? null;
+        unset($data['source_rechnung_id']);
+
         $data['date_start'] = date('Y-m-d',strtotime(request()->date_start));
         $data['date_end'] = date('Y-m-d',strtotime(request()->date_end));
         $entity = new Entity();
@@ -100,6 +115,7 @@ class CustomerInvoicesController extends Controller
         $entity->fill($data);
 
         $entity->save();
+        $this->copyRechnungPdfToCustomerInvoice($sourceRechnungId, $entity);
         
         return redirect()->route('customer-invoices.index')->with('success', __('Faktura je uspešno sačuvana!'));
     }
@@ -119,13 +135,20 @@ class CustomerInvoicesController extends Controller
         $this->normalizeMoneyInput($request, 'price');
         
         $data = $request->validate([
-            'id_invoice' => ['required', 'string', 'max:190'],
+            'id_invoice' => [
+                'required',
+                'string',
+                'max:190',
+                Rule::unique('customer_invoices', 'id_invoice')->ignore($entity->id)->whereNull('deleted_at'),
+            ],
             'company' => ['required', 'integer', 'exists:firme,id'],
             'date_start' => ['required', 'string', 'date_format:d-m-Y'],
             'date_end' => ['required', 'string', 'date_format:d-m-Y', 'after_or_equal:date_start'],
             'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'text' => ['nullable', 'string', 'max:900'],
             'address' => ['nullable', 'string', 'max:900']
+        ], [
+            'id_invoice.unique' => __('Broj fakture već postoji u izlaznim fakturama!'),
         ]);
 
         $data['date_start'] = date('Y-m-d',strtotime(request()->date_start));
@@ -269,6 +292,64 @@ class CustomerInvoicesController extends Controller
             if (str_starts_with($path, $prefix)) {
                 $path = substr($path, strlen($prefix));
             }
+        }
+
+        return $path;
+    }
+
+    private function copyRechnungPdfToCustomerInvoice(?int $rechnungId, Entity $invoice): void
+    {
+        if (! $rechnungId) {
+            return;
+        }
+
+        $rechnung = Rechnung::find($rechnungId);
+
+        if (! $rechnung || ! $rechnung->invoice_url || ! $invoice->firma) {
+            return;
+        }
+
+        $sourcePath = $this->normalizePublicPdfPath($rechnung->invoice_url);
+
+        if (! Storage::disk('public')->exists($sourcePath)) {
+            return;
+        }
+
+        try {
+            $companySlug = Str::slug($invoice->firma->name);
+            $companyFolder = $invoice->firma->id . '-' . $companySlug;
+            $invoiceFolder = str_replace(['/', ' '], '-', $invoice->id_invoice);
+            $folder = 'ausgangsrechnungen/' . $companyFolder . '/' . $invoiceFolder;
+
+            Storage::disk('public')->makeDirectory($folder);
+
+            $sourceName = pathinfo($sourcePath, PATHINFO_FILENAME);
+            $filename = (Str::slug($sourceName) ?: 'rechnung-' . $invoice->id) . '.pdf';
+            $targetPath = $this->uniquePublicFilePath($folder, $filename);
+
+            Storage::disk('public')->copy($sourcePath, $targetPath);
+
+            $invoice->pdf = $targetPath;
+            $invoice->save();
+        } catch (\Throwable $exception) {
+            Log::warning('Rechnung PDF could not be copied to customer invoice.', [
+                'rechnung_id' => $rechnungId,
+                'customer_invoice_id' => $invoice->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function uniquePublicFilePath(string $folder, string $filename): string
+    {
+        $original = pathinfo($filename, PATHINFO_FILENAME);
+        $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: 'pdf';
+        $path = "{$folder}/{$filename}";
+        $counter = 1;
+
+        while (Storage::disk('public')->exists($path)) {
+            $path = "{$folder}/{$original}-{$counter}.{$extension}";
+            $counter++;
         }
 
         return $path;

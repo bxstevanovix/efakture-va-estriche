@@ -89,6 +89,7 @@
     <link rel="icon" href="{{ asset('f-circle.svg') }}" type="image/svg+xml">
 	<link href="{{ asset('files/vendor/bootstrap-select/css/bootstrap-select.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('files/css/style.css') }}" rel="stylesheet">
+	<link href="{{ asset('files/css/custom.css') }}?v={{ filemtime(public_path('files/css/custom.css')) }}" rel="stylesheet">
 
     <style>
     @media (max-width: 765px) {

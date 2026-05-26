@@ -26,9 +26,9 @@
 
     .doc-card:hover,
     .doc-card.active {
-        border-color: #0d6efd;
+        border-color: var(--primary);
         background: #f3f7ff;
-        color: #0d6efd;
+        color: var(--primary);
     }
 
     .rechnung-modal .select2-container {

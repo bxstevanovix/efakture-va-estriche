@@ -12,13 +12,17 @@
     if ($priceInputValue === null && $entity->price !== null) {
         $priceInputValue = number_format((float) $entity->price, 2, ',', '');
     }
+
+    $formAction = $formAction ?? '';
+    $includeSourceRechnungField = $includeSourceRechnungField ?? false;
+    $submitLabel = $submitLabel ?? __('Sačuvaj');
 @endphp
 <style>
-    .mb-3 {
+    .invoice-form .mb-3 {
         position: relative;
     }
 
-    .autocomplete-box {
+    .invoice-form .autocomplete-box {
         position: absolute;
         top: 100%;
         left: 0;
@@ -40,7 +44,7 @@
         margin-right: 15px;
     }
 
-    .autocomplete-item {
+    .invoice-form .autocomplete-item {
         padding: 10px 14px;
         cursor: pointer;
         font-size: 14px;
@@ -51,35 +55,35 @@
     }
 
     /* HOVER */
-    .autocomplete-item:hover {
+    .invoice-form .autocomplete-item:hover {
         background: #f2f6ff;
         color: #0d6efd;
     }
 
     /* LAST ITEM BORDER REMOVE */
-    .autocomplete-item:last-child {
+    .invoice-form .autocomplete-item:last-child {
         border-bottom: none;
     }
 
     /* SCROLL BAR (Chrome / Edge / Safari) */
-    .autocomplete-box::-webkit-scrollbar {
+    .invoice-form .autocomplete-box::-webkit-scrollbar {
         width: 6px;
     }
 
-    .autocomplete-box::-webkit-scrollbar-thumb {
+    .invoice-form .autocomplete-box::-webkit-scrollbar-thumb {
         background: #ccc;
         border-radius: 10px;
     }
 
-    .autocomplete-box::-webkit-scrollbar-thumb:hover {
+    .invoice-form .autocomplete-box::-webkit-scrollbar-thumb:hover {
         background: #999;
     }
 
-    .autocomplete-item strong {
+    .invoice-form .autocomplete-item strong {
         color: #0d6efd;
     }
 
-    .autocomplete-item.active {
+    .invoice-form .autocomplete-item.active {
         background: #e9f2ff;
         color: #0d6efd;
     }
@@ -138,8 +142,11 @@
     }
 </style>
 
-<form id="entity-form" method="post" action="" enctype="multipart/form-data" autocomplete="off" class="needs-validation invoice-form">
+<form id="entity-form" method="post" action="{{ $formAction }}" enctype="multipart/form-data" autocomplete="off" class="needs-validation invoice-form">
     @csrf
+    @if($includeSourceRechnungField)
+        <input type="hidden" name="source_rechnung_id" id="source_rechnung_id" value="">
+    @endif
         <div class="form-validation">
             <div class="row">
                 <div class="mb-3 col-lg-7">
@@ -285,7 +292,7 @@
         </div>
     <div class="invoice-form-actions">
         <button type="submit" class="btn btn-success waves-effect waves-light">
-            <i class="fa fa-save"></i> @lang('Sačuvaj')
+            <i class="fa fa-save"></i> {{ $submitLabel }}
         </button>
     </div>
 </form>
@@ -294,9 +301,13 @@
 
 <script>
 $(function() {
-    $('#companySelect').select2({
+    const companySelect = $('#companySelect');
+    const companySelectModal = companySelect.closest('.modal');
+
+    companySelect.select2({
         placeholder: "Firma auswählen",
         allowClear: true,
+        dropdownParent: companySelectModal.length ? companySelectModal : $(document.body),
         width: '100%'
     });
         
@@ -314,6 +325,11 @@ $(function() {
 
     $('#entity-form [name="date_start"]').on('change', function(e){
         e.preventDefault();
+
+        if ($('#entity-form [name="source_rechnung_id"]').length) {
+            return;
+        }
+
         let start = $('#entity-form [name="date_start"]').val();
         let split = start.split('-');
         let end10 = parseInt(split[2]) + 10;

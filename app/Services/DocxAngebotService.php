@@ -87,9 +87,10 @@ class DocxAngebotService
         $ausfuehrungszeit = trim((string) ($data['ausfuehrungszeit'] ?? ''));
         $documentLabel = trim((string) ($data['document_label'] ?? 'Angebot'));
         $title = $documentLabel . ' ' . trim((string) ($data['number'] ?? ''));
+        $titleRuns = [$this->run($title, ['bold' => true])];
 
         if ($ausfuehrungszeit !== '') {
-            $title .= ', Ausführungszeit: ' . $ausfuehrungszeit;
+            $titleRuns[] = $this->run(', Ausführungszeit: ' . $ausfuehrungszeit);
         }
 
         $itemsTable = $this->table($this->tableHeader())
@@ -115,7 +116,7 @@ class DocxAngebotService
     ' . $this->metaTable((string) ($data['uid'] ?? ''), (string) ($data['date'] ?? '')) . '
     ' . ($bvh !== '' ? $this->paragraph('BVH. ' . $bvh, ['before' => 200, 'after' => 30]) : '') . '
     ' . ($auftragsnr !== '' ? $this->paragraph($auftragsnr, ['after' => 30]) : '') . '
-    ' . $this->paragraph($title, ['bold' => true, 'after' => 70]) . '
+    ' . $this->richParagraph($titleRuns, ['after' => 70]) . '
     ' . $itemsTable . '
     ' . $summaryPageLead . '
     ' . $this->summary($data['summary'] ?? []) . '

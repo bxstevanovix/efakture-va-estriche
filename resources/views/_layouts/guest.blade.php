@@ -15,6 +15,13 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            input:focus {
+                border-color: rgba(91, 70, 178, 0.62);
+                box-shadow: 0 0 0 4px rgba(91, 70, 178, 0.12);
+                outline: 0;
+            }
+        </style>
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
