@@ -7,6 +7,7 @@ use App\Http\Controllers\RechnungController;
 use App\Http\Controllers\FirmaController;
 use App\Http\Controllers\CustomerInvoicesController;
 use App\Http\Controllers\DashController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\SupplierInvoicesController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\PDFController;
@@ -24,7 +25,19 @@ Route::post('/dashboard/datatable-customers', [DashController::class, 'datatable
 Route::post('/dashboard/datatable-suppliers', [DashController::class, 'datatableSuppliers'])->name('datatable_suppliers');
 
 Route::middleware('auth')->group(function () {
-    
+    //MITARBEITER
+    Route::name('employees.')->prefix('/mitarbeiter')->group(function () {
+        Route::get('/', [EmployeeController::class, 'index'])->name('index');
+        Route::get('/create', [EmployeeController::class, 'create'])->name('create');
+        Route::post('/create', [EmployeeController::class, 'store'])->name('store');
+        Route::get('/{entity}', [EmployeeController::class, 'show'])->name('show');
+        Route::post('/{entity}/work-logs', [EmployeeController::class, 'storeWorkLog'])->name('work_logs.store');
+        Route::post('/{entity}/work-logs/generate', [EmployeeController::class, 'generateDefaultWorkLogs'])->name('work_logs.generate');
+        Route::post('/{entity}/work-logs/{workLog}/delete', [EmployeeController::class, 'deleteWorkLog'])->name('work_logs.delete');
+        Route::post('/{entity}/documents', [EmployeeController::class, 'uploadDocument'])->name('documents.upload');
+        Route::post('/{entity}/documents/{document}/delete', [EmployeeController::class, 'deleteDocument'])->name('documents.delete');
+    });
+
     //IZLAZNE FAKTURE
     Route::name('customer-invoices.')->prefix('customer-invoices')->group(function () {
         Route::get('/', [CustomerInvoicesController::class, 'index'])->name('index');
