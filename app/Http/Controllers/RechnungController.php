@@ -629,7 +629,7 @@ class RechnungController extends Controller
         if ($discountFixed > 0) {
             $running -= $discountFixed;
             $adjustments[] = [
-                'label' => '- Pauschale',
+                'label' => '- Pauschalenachlass',
                 'amount' => $this->formatMoney($discountFixed),
                 'running_total' => $this->formatMoney($running),
             ];
@@ -651,7 +651,6 @@ class RechnungController extends Controller
             $adjustments[] = [
                 'label' => '+ 20% MwSt',
                 'amount' => $this->formatMoney($amount),
-                'running_total' => $this->formatMoney($running),
             ];
         }
 

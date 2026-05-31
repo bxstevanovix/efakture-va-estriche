@@ -649,7 +649,7 @@
 						${runningTotalRow(afterDiscountPercent)}` : ''}
 						${data.discountFixed > 0 ? `
 						<div class="summary-row">
-							<span>- Pauschale</span>
+							<span>- Pauschalenachlass</span>
 							<span class="summary-amount"><span>${formatEuro(data.discountFixed)}</span></span>
 						</div>
 						${runningTotalRow(afterDiscountFixed)}` : ''}
@@ -663,8 +663,7 @@
 						<div class="summary-row">
 							<span>+ 20% MwSt</span>
 							<span class="summary-amount"><span>${formatEuro(totals.tax)}</span></span>
-						</div>
-						${runningTotalRow(afterTax)}` : ''}
+						</div>` : ''}
 						${data.abzugTr1 > 0 ? `
 						<div class="summary-row">
 							<span>- ${escapeHtml(data.abzugTrLabel)}</span>

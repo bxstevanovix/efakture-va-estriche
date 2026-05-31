@@ -17,7 +17,7 @@
                 </a>
             </li> --}}
 
-            <li>
+            {{-- <li>
                 <a href="{{ route('employees.index') }}" class="" aria-expanded="false">
                 <svg data-chakra-component="CIcon" viewBox="13.03 9.88 69.72 69.79" role="presentation" class="css-5ffdf css-3cz70w css-0">
                     <g><path fill="currentColor" d="M68.77 71.57c-1 0-2.2-.07-3.09-.13-.52 0-.91-.06-1.07 0l-.1-2h1.3c.76 0 2 .13 3 .13 8.54 0 11.41-1.75 11.81-2.85v-.52c-.12-6.42-.92-7.35-1.08-7.47-1-.74-4.47-2.79-6.19-3.79a7.54 7.54 0 01-2.88 1.45 5 5 0 01-1.58.31A8.56 8.56 0 0164 55.63l-.75-.48-.25-.22-.77.4c-.54.27-1.14.58-1.4.73l-1-1.73c.27-.16.92-.49 1.5-.79l1-.49.23-.14h.11a1.5 1.5 0 011.38.25c.17.15.3.25.43.35l.75.48a7 7 0 003.38.74h.19a3.22 3.22 0 001.06-.21h.12a5.54 5.54 0 002.36-1.26 1.58 1.58 0 011.43-.29h.07l.27.14c2 1.17 5.57 3.26 6.67 4.08s1.77 3.54 1.88 9v.43l.09.21-.14.37c-.47 1.57-2.8 4.37-13.84 4.37zM73 54.78z" data-name="Path 2"></path>
@@ -27,7 +27,7 @@
                 </svg>
                 <span class="nav-text">@lang('Radnici')</span>
                 </a>
-            </li>
+            </li> --}}
 
             <li><a class="has-arrow" href="javascript:void(0);" aria-expanded="true">
                     <svg data-chakra-component="CIcon" viewBox="22.82 10.4 63.45 70.17" role="presentation" class="css-5ffdf css-3cz70w css-0"><g>

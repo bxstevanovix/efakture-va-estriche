@@ -290,7 +290,7 @@ class DocxAngebotService
         foreach ($summary['adjustments'] ?? [] as $adjustment) {
             $rows .= $this->summaryRow($adjustment['label'], $adjustment['amount']);
 
-            if (! empty($adjustment['running_total'])) {
+            if ($this->shouldShowRunningTotal($adjustment)) {
                 $rows .= $this->summaryRow('', $adjustment['running_total'], true);
             }
         }
@@ -742,10 +742,19 @@ class DocxAngebotService
         $rows = 2;
 
         foreach ($summary['adjustments'] ?? [] as $adjustment) {
-            $rows += empty($adjustment['running_total']) ? 1 : 2;
+            $rows += $this->shouldShowRunningTotal($adjustment) ? 2 : 1;
         }
 
         return 180 + ($rows * 310) + 260;
+    }
+
+    private function shouldShowRunningTotal(array $adjustment): bool
+    {
+        if (empty($adjustment['running_total'])) {
+            return false;
+        }
+
+        return ! str_contains(strtolower((string) ($adjustment['label'] ?? '')), 'mwst');
     }
 
     private function logoParagraph(): string
