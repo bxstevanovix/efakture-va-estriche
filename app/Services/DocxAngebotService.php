@@ -401,7 +401,7 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
-                'editor_amount_tabs' => true,
+                'editor_spacing_tabs' => true,
             ]);
         }
 
@@ -430,7 +430,7 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
-                'editor_amount_tabs' => true,
+                'editor_spacing_tabs' => true,
             ]);
         }
 
@@ -469,7 +469,7 @@ class DocxAngebotService
                     'after' => 35,
                     'left' => 520,
                     'hanging' => 180,
-                    'editor_amount_tabs' => true,
+                    'editor_spacing_tabs' => true,
                 ]);
             }
 
@@ -542,7 +542,7 @@ class DocxAngebotService
 
     private function defaultInlineStyle(): array
     {
-        return ['size' => 22, 'editor_amount_tabs' => true];
+        return ['size' => 22, 'editor_spacing_tabs' => true];
     }
 
     private function normalizeTextNode(string $text): string
@@ -571,7 +571,7 @@ class DocxAngebotService
         $before = (int) ($options['before'] ?? 0);
         $after = (int) ($options['after'] ?? 40);
         $keepNext = ! empty($options['keep_next']) ? '<w:keepNext/>' : '';
-        $tabs = ! empty($options['editor_amount_tabs'])
+        $tabs = ! empty($options['editor_spacing_tabs'])
             ? '<w:tabs><w:tab w:val="right" w:pos="' . self::NOTE_RIGHT_TAB_POSITION . '"/></w:tabs>'
             : '';
         $indent = '';
@@ -641,20 +641,55 @@ class DocxAngebotService
 
     private function textPartXml(string $text, array $options = []): string
     {
-        if (empty($options['editor_amount_tabs'])) {
+        if (empty($options['editor_spacing_tabs'])) {
             return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
         }
 
         $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $spaceClass = ' ' . preg_quote($nbsp, '/');
+        $separatorPattern = '/(\t+|[ ' . preg_quote($nbsp, '/') . ']{2,})/u';
+        $chunks = preg_split($separatorPattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-        if (! preg_match('/^(.*?)(?:\t+|[' . $spaceClass . ']{2,})(€\s*[-+]?\d[\d.,]*)\s*$/u', $text, $matches)) {
+        if ($chunks === false || count($chunks) === 1) {
             return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
         }
 
-        return '<w:t xml:space="preserve">' . $this->e($matches[1]) . '</w:t>'
-            . '<w:tab/>'
-            . '<w:t xml:space="preserve">' . $this->e($matches[2]) . '</w:t>';
+        $xml = '';
+        $hasTextBefore = false;
+
+        foreach ($chunks as $index => $chunk) {
+            if ($chunk === '') {
+                continue;
+            }
+
+            if (preg_match($separatorPattern, $chunk)) {
+                if ($hasTextBefore && $this->hasTextAfter($chunks, $index)) {
+                    $xml .= '<w:tab/>';
+                } else {
+                    $xml .= '<w:t xml:space="preserve">' . $this->e($chunk) . '</w:t>';
+                }
+
+                continue;
+            }
+
+            $xml .= '<w:t xml:space="preserve">' . $this->e($chunk) . '</w:t>';
+            $hasTextBefore = true;
+        }
+
+        return $xml !== '' ? $xml : '<w:t xml:space="preserve"></w:t>';
+    }
+
+    private function hasTextAfter(array $chunks, int $index): bool
+    {
+        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $separatorPattern = '/^(\t+|[ ' . preg_quote($nbsp, '/') . ']{2,})$/u';
+
+        for ($i = $index + 1; $i < count($chunks); $i++) {
+            if ($chunks[$i] !== '' && ! preg_match($separatorPattern, $chunks[$i])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function plainCell(array $lines, int $width, array $options = []): string
