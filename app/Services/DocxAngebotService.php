@@ -22,6 +22,7 @@ class DocxAngebotService
     private const TABLE_ROW_HEIGHT = 360;
     private const TABLE_HEADER_BODY_GAP = 40;
     private const SUMMARY_PAGE_RESERVE = 760;
+    private const NOTE_RIGHT_TAB_POSITION = 5775;
 
     public function create(string $path): string
     {
@@ -400,6 +401,7 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
+                'editor_amount_tabs' => true,
             ]);
         }
 
@@ -428,6 +430,7 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
+                'editor_amount_tabs' => true,
             ]);
         }
 
@@ -466,6 +469,7 @@ class DocxAngebotService
                     'after' => 35,
                     'left' => 520,
                     'hanging' => 180,
+                    'editor_amount_tabs' => true,
                 ]);
             }
 
@@ -538,7 +542,7 @@ class DocxAngebotService
 
     private function defaultInlineStyle(): array
     {
-        return ['size' => 22];
+        return ['size' => 22, 'editor_amount_tabs' => true];
     }
 
     private function normalizeTextNode(string $text): string
@@ -567,6 +571,9 @@ class DocxAngebotService
         $before = (int) ($options['before'] ?? 0);
         $after = (int) ($options['after'] ?? 40);
         $keepNext = ! empty($options['keep_next']) ? '<w:keepNext/>' : '';
+        $tabs = ! empty($options['editor_amount_tabs'])
+            ? '<w:tabs><w:tab w:val="right" w:pos="' . self::NOTE_RIGHT_TAB_POSITION . '"/></w:tabs>'
+            : '';
         $indent = '';
 
         if (! empty($options['left'])) {
@@ -576,7 +583,7 @@ class DocxAngebotService
         }
 
         return '<w:p>
-  <w:pPr>' . $keepNext . '<w:jc w:val="' . $align . '"/><w:spacing w:before="' . $before . '" w:after="' . $after . '"/>' . $indent . '</w:pPr>
+  <w:pPr>' . $keepNext . $tabs . '<w:jc w:val="' . $align . '"/><w:spacing w:before="' . $before . '" w:after="' . $after . '"/>' . $indent . '</w:pPr>
   ' . implode('', $runs) . '
 </w:p>';
     }
@@ -587,7 +594,7 @@ class DocxAngebotService
             return '';
         }
 
-        return '<w:r><w:rPr>' . $this->runStyle($options) . '</w:rPr>' . $this->textWithBreaks($text) . '</w:r>';
+        return '<w:r><w:rPr>' . $this->runStyle($options) . '</w:rPr>' . $this->textWithBreaks($text, $options) . '</w:r>';
     }
 
     private function lineBreakRun(): string
@@ -619,17 +626,35 @@ class DocxAngebotService
 </w:p>';
     }
 
-    private function textWithBreaks(string $text): string
+    private function textWithBreaks(string $text, array $options = []): string
     {
         $parts = preg_split('/\R/u', $text) ?: [''];
         $xml = '';
 
         foreach ($parts as $index => $part) {
             $xml .= ($index > 0 ? '<w:br/>' : '')
-                . '<w:t xml:space="preserve">' . $this->e($part) . '</w:t>';
+                . $this->textPartXml($part, $options);
         }
 
         return $xml !== '' ? $xml : '<w:t xml:space="preserve"></w:t>';
+    }
+
+    private function textPartXml(string $text, array $options = []): string
+    {
+        if (empty($options['editor_amount_tabs'])) {
+            return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
+        }
+
+        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $spaceClass = ' ' . preg_quote($nbsp, '/');
+
+        if (! preg_match('/^(.*?)(?:\t+|[' . $spaceClass . ']{2,})(€\s*[-+]?\d[\d.,]*)\s*$/u', $text, $matches)) {
+            return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
+        }
+
+        return '<w:t xml:space="preserve">' . $this->e($matches[1]) . '</w:t>'
+            . '<w:tab/>'
+            . '<w:t xml:space="preserve">' . $this->e($matches[2]) . '</w:t>';
     }
 
     private function plainCell(array $lines, int $width, array $options = []): string

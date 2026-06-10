@@ -10,7 +10,6 @@ class DocxAngebotServiceTest extends TestCase
 {
     public function test_editor_spacing_is_preserved_in_generated_docx_note(): void
     {
-        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $xml = $this->documentXml([
             'document_label' => 'Rechnung',
             'customer_name' => 'Test GmbH',
@@ -26,7 +25,7 @@ class DocxAngebotServiceTest extends TestCase
             'use_tax' => true,
             'bank_details' => 'Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507',
             'note_html' => '<p><strong class="ql-size-huge">Gutschrift Teilrechnung 1-2</strong></p>'
-                . '<p><strong class="ql-size-huge">Netto&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;€ 166,67</strong></p>'
+                . "<p><strong class=\"ql-size-huge\">Netto\t€ 166,67</strong></p>"
                 . '<p><strong class="ql-size-huge">20% MwSt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;€ 33,33</strong></p>'
                 . "<p><strong class=\"ql-size-huge\">Brutto.\t\t€ 200,00</strong></p>",
             'items' => [],
@@ -38,9 +37,9 @@ class DocxAngebotServiceTest extends TestCase
         ]);
 
         $this->assertStringContainsString('Gutschrift Teilrechnung 1-2', $xml);
-        $this->assertStringContainsString('Netto' . str_repeat($nbsp, 12) . '€ 166,67', $xml);
-        $this->assertStringContainsString('20% MwSt' . str_repeat($nbsp, 8) . '€ 33,33', $xml);
-        $this->assertStringContainsString("Brutto.\t\t€ 200,00", $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Netto<\/w:t><w:tab\/><w:t xml:space="preserve">€ 166,67<\/w:t>/', $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">20% MwSt<\/w:t><w:tab\/><w:t xml:space="preserve">€ 33,33<\/w:t>/', $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Brutto\.<\/w:t><w:tab\/><w:t xml:space="preserve">€ 200,00<\/w:t>/', $xml);
     }
 
     private function documentXml(array $data): string
