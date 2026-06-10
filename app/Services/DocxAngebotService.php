@@ -22,7 +22,6 @@ class DocxAngebotService
     private const TABLE_ROW_HEIGHT = 360;
     private const TABLE_HEADER_BODY_GAP = 40;
     private const SUMMARY_PAGE_RESERVE = 760;
-    private const TAB_WIDTH_IN_SPACES = 8;
 
     public function create(string $path): string
     {
@@ -397,7 +396,7 @@ class DocxAngebotService
                 return '';
             }
 
-            return $this->richParagraph([$this->run($text)], [
+            return $this->richParagraph([$this->run($text, $this->defaultInlineStyle())], [
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
@@ -627,20 +626,10 @@ class DocxAngebotService
 
         foreach ($parts as $index => $part) {
             $xml .= ($index > 0 ? '<w:br/>' : '')
-                . '<w:t xml:space="preserve">' . $this->e($this->editorWhitespace($part)) . '</w:t>';
+                . '<w:t xml:space="preserve">' . $this->e($part) . '</w:t>';
         }
 
         return $xml !== '' ? $xml : '<w:t xml:space="preserve"></w:t>';
-    }
-
-    private function editorWhitespace(string $text): string
-    {
-        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = str_replace("\t", str_repeat($nbsp, self::TAB_WIDTH_IN_SPACES), $text);
-
-        return preg_replace_callback('/ {2,}/', function ($matches) use ($nbsp) {
-            return str_repeat($nbsp, strlen($matches[0]));
-        }, $text) ?? $text;
     }
 
     private function plainCell(array $lines, int $width, array $options = []): string

@@ -25,8 +25,10 @@ class DocxAngebotServiceTest extends TestCase
             'spacing_top' => 20,
             'use_tax' => true,
             'bank_details' => 'Bankverbindung: UniCredit Bank Austria AG, BIC: BKAUATWW, IBAN: AT22 1200 0006 2226 3507',
-            'note_html' => '<p><strong>Tekst mora biti ovdje&nbsp;&nbsp;&nbsp;&nbsp;300e</strong></p>'
-                . "<p>ako nije ovdje onda je problem\t\t200e</p>",
+            'note_html' => '<p><strong class="ql-size-huge">Gutschrift Teilrechnung 1-2</strong></p>'
+                . '<p><strong class="ql-size-huge">Netto&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;€ 166,67</strong></p>'
+                . '<p><strong class="ql-size-huge">20% MwSt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;€ 33,33</strong></p>'
+                . "<p><strong class=\"ql-size-huge\">Brutto.\t\t€ 200,00</strong></p>",
             'items' => [],
             'summary' => [
                 'subtotal' => '0,00',
@@ -35,8 +37,10 @@ class DocxAngebotServiceTest extends TestCase
             ],
         ]);
 
-        $this->assertStringContainsString('Tekst mora biti ovdje' . str_repeat($nbsp, 4) . '300e', $xml);
-        $this->assertStringContainsString('ako nije ovdje onda je problem' . str_repeat($nbsp, 16) . '200e', $xml);
+        $this->assertStringContainsString('Gutschrift Teilrechnung 1-2', $xml);
+        $this->assertStringContainsString('Netto' . str_repeat($nbsp, 12) . '€ 166,67', $xml);
+        $this->assertStringContainsString('20% MwSt' . str_repeat($nbsp, 8) . '€ 33,33', $xml);
+        $this->assertStringContainsString("Brutto.\t\t€ 200,00", $xml);
     }
 
     private function documentXml(array $data): string
