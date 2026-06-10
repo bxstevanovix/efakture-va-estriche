@@ -649,7 +649,7 @@
 						${runningTotalRow(afterDiscountPercent)}` : ''}
 						${data.discountFixed > 0 ? `
 						<div class="summary-row">
-							<span>- Pauschalenachlass</span>
+							<span>- Pauschalnachlass</span>
 							<span class="summary-amount"><span>${formatEuro(data.discountFixed)}</span></span>
 						</div>
 						${runningTotalRow(afterDiscountFixed)}` : ''}

@@ -629,7 +629,7 @@ class RechnungController extends Controller
         if ($discountFixed > 0) {
             $running -= $discountFixed;
             $adjustments[] = [
-                'label' => '- Pauschalenachlass',
+                'label' => '- Pauschalnachlass',
                 'amount' => $this->formatMoney($discountFixed),
                 'running_total' => $this->formatMoney($running),
             ];
