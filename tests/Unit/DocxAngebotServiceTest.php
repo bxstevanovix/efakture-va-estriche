@@ -37,9 +37,12 @@ class DocxAngebotServiceTest extends TestCase
         ]);
 
         $this->assertStringContainsString('Gutschrift Teilrechnung 1-2', $xml);
-        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Netto<\/w:t><w:tab\/><w:t xml:space="preserve">300 EVRA<\/w:t>/', $xml);
-        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Brutto<\/w:t><w:tab\/><w:t xml:space="preserve">450 E<\/w:t>/', $xml);
-        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Ukupono\.<\/w:t><w:tab\/><w:t xml:space="preserve">769 e<\/w:t>/', $xml);
+        $this->assertStringContainsString('<w:tblW w:w="5775" w:type="dxa"/>', $xml);
+        $this->assertStringContainsString('<w:gridCol w:w="2888"/>', $xml);
+        $this->assertStringContainsString('<w:gridCol w:w="2887"/>', $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Netto<\/w:t>.*?<w:t xml:space="preserve">300 EVRA<\/w:t>/s', $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Brutto<\/w:t>.*?<w:t xml:space="preserve">450 E<\/w:t>/s', $xml);
+        $this->assertMatchesRegularExpression('/<w:t xml:space="preserve">Ukupono\.<\/w:t>.*?<w:t xml:space="preserve">769 e<\/w:t>/s', $xml);
     }
 
     private function documentXml(array $data): string

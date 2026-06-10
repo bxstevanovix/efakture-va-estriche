@@ -22,7 +22,9 @@ class DocxAngebotService
     private const TABLE_ROW_HEIGHT = 360;
     private const TABLE_HEADER_BODY_GAP = 40;
     private const SUMMARY_PAGE_RESERVE = 760;
-    private const NOTE_RIGHT_TAB_POSITION = 5775;
+    private const NOTE_TABLE_WIDTH = 5775;
+    private const NOTE_LABEL_WIDTH = 2888;
+    private const NOTE_VALUE_WIDTH = 2887;
 
     public function create(string $path): string
     {
@@ -401,7 +403,6 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
-                'editor_spacing_tabs' => true,
             ]);
         }
 
@@ -420,6 +421,12 @@ class DocxAngebotService
         }
 
         if (in_array($tag, ['p', 'div'], true)) {
+            $alignedRow = $this->noteAlignedTextRow($node, $first);
+
+            if ($alignedRow !== '') {
+                return $alignedRow;
+            }
+
             $runs = $this->inlineRuns($node, $this->defaultInlineStyle());
 
             if (! $this->runsHaveContent($runs)) {
@@ -430,7 +437,6 @@ class DocxAngebotService
                 'before' => $first ? 220 : 0,
                 'after' => 35,
                 'left' => 380,
-                'editor_spacing_tabs' => true,
             ]);
         }
 
@@ -469,7 +475,6 @@ class DocxAngebotService
                     'after' => 35,
                     'left' => 520,
                     'hanging' => 180,
-                    'editor_spacing_tabs' => true,
                 ]);
             }
 
@@ -542,7 +547,106 @@ class DocxAngebotService
 
     private function defaultInlineStyle(): array
     {
-        return ['size' => 22, 'editor_spacing_tabs' => true];
+        return ['size' => 22];
+    }
+
+    private function noteAlignedTextRow(DOMElement $element, bool $first): string
+    {
+        foreach ($element->childNodes as $child) {
+            if ($child instanceof DOMElement && in_array(strtolower($child->tagName), ['table', 'ul', 'ol'], true)) {
+                return '';
+            }
+        }
+
+        $parts = $this->splitEditorAlignedText($this->normalizeTextNode($element->textContent ?? ''));
+
+        if ($parts === null) {
+            return '';
+        }
+
+        $options = array_merge($this->dominantInlineStyle($element), [
+            'before' => $first ? 220 : 0,
+            'after' => 35,
+        ]);
+
+        return '<w:tbl>
+  <w:tblPr>
+    <w:tblInd w:w="380" w:type="dxa"/>
+    <w:tblW w:w="' . self::NOTE_TABLE_WIDTH . '" w:type="dxa"/>
+    <w:tblBorders>
+      <w:top w:val="nil"/>
+      <w:left w:val="nil"/>
+      <w:bottom w:val="nil"/>
+      <w:right w:val="nil"/>
+      <w:insideH w:val="nil"/>
+      <w:insideV w:val="nil"/>
+    </w:tblBorders>
+    <w:tblCellMar>
+      <w:top w:w="0" w:type="dxa"/>
+      <w:left w:w="0" w:type="dxa"/>
+      <w:bottom w:w="0" w:type="dxa"/>
+      <w:right w:w="0" w:type="dxa"/>
+    </w:tblCellMar>
+  </w:tblPr>
+  <w:tblGrid>
+    <w:gridCol w:w="' . self::NOTE_LABEL_WIDTH . '"/>
+    <w:gridCol w:w="' . self::NOTE_VALUE_WIDTH . '"/>
+  </w:tblGrid>
+  <w:tr>
+    <w:tc><w:tcPr><w:tcW w:w="' . self::NOTE_LABEL_WIDTH . '" w:type="dxa"/></w:tcPr>
+      ' . $this->paragraph($parts[0], $options) . '
+    </w:tc>
+    <w:tc><w:tcPr><w:tcW w:w="' . self::NOTE_VALUE_WIDTH . '" w:type="dxa"/></w:tcPr>
+      ' . $this->paragraph($parts[1], $options) . '
+    </w:tc>
+  </w:tr>
+</w:tbl>';
+    }
+
+    private function splitEditorAlignedText(string $text): ?array
+    {
+        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $separatorPattern = '/(\t+|[ ' . preg_quote($nbsp, '/') . ']{2,})/u';
+        $chunks = preg_split($separatorPattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        if ($chunks === false || count($chunks) === 1) {
+            return null;
+        }
+
+        for ($index = count($chunks) - 1; $index >= 0; $index--) {
+            if (! preg_match($separatorPattern, $chunks[$index])) {
+                continue;
+            }
+
+            $left = implode('', array_slice($chunks, 0, $index));
+            $right = implode('', array_slice($chunks, $index + 1));
+
+            if ($this->hasVisibleText($left) && $this->hasVisibleText($right)) {
+                return [$left, $right];
+            }
+        }
+
+        return null;
+    }
+
+    private function hasVisibleText(string $text): bool
+    {
+        return trim(str_replace(html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8'), ' ', $text)) !== '';
+    }
+
+    private function dominantInlineStyle(DOMNode $node, ?array $style = null): array
+    {
+        $style ??= $this->defaultInlineStyle();
+
+        if ($node instanceof DOMElement) {
+            $style = $this->mergeInlineStyle($node, $style);
+        }
+
+        foreach ($node->childNodes as $child) {
+            $style = $this->dominantInlineStyle($child, $style);
+        }
+
+        return $style;
     }
 
     private function normalizeTextNode(string $text): string
@@ -571,9 +675,6 @@ class DocxAngebotService
         $before = (int) ($options['before'] ?? 0);
         $after = (int) ($options['after'] ?? 40);
         $keepNext = ! empty($options['keep_next']) ? '<w:keepNext/>' : '';
-        $tabs = ! empty($options['editor_spacing_tabs'])
-            ? '<w:tabs><w:tab w:val="right" w:pos="' . self::NOTE_RIGHT_TAB_POSITION . '"/></w:tabs>'
-            : '';
         $indent = '';
 
         if (! empty($options['left'])) {
@@ -583,7 +684,7 @@ class DocxAngebotService
         }
 
         return '<w:p>
-  <w:pPr>' . $keepNext . $tabs . '<w:jc w:val="' . $align . '"/><w:spacing w:before="' . $before . '" w:after="' . $after . '"/>' . $indent . '</w:pPr>
+  <w:pPr>' . $keepNext . '<w:jc w:val="' . $align . '"/><w:spacing w:before="' . $before . '" w:after="' . $after . '"/>' . $indent . '</w:pPr>
   ' . implode('', $runs) . '
 </w:p>';
     }
@@ -594,7 +695,7 @@ class DocxAngebotService
             return '';
         }
 
-        return '<w:r><w:rPr>' . $this->runStyle($options) . '</w:rPr>' . $this->textWithBreaks($text, $options) . '</w:r>';
+        return '<w:r><w:rPr>' . $this->runStyle($options) . '</w:rPr>' . $this->textWithBreaks($text) . '</w:r>';
     }
 
     private function lineBreakRun(): string
@@ -626,70 +727,17 @@ class DocxAngebotService
 </w:p>';
     }
 
-    private function textWithBreaks(string $text, array $options = []): string
+    private function textWithBreaks(string $text): string
     {
         $parts = preg_split('/\R/u', $text) ?: [''];
         $xml = '';
 
         foreach ($parts as $index => $part) {
             $xml .= ($index > 0 ? '<w:br/>' : '')
-                . $this->textPartXml($part, $options);
+                . '<w:t xml:space="preserve">' . $this->e($part) . '</w:t>';
         }
 
         return $xml !== '' ? $xml : '<w:t xml:space="preserve"></w:t>';
-    }
-
-    private function textPartXml(string $text, array $options = []): string
-    {
-        if (empty($options['editor_spacing_tabs'])) {
-            return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
-        }
-
-        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $separatorPattern = '/(\t+|[ ' . preg_quote($nbsp, '/') . ']{2,})/u';
-        $chunks = preg_split($separatorPattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-        if ($chunks === false || count($chunks) === 1) {
-            return '<w:t xml:space="preserve">' . $this->e($text) . '</w:t>';
-        }
-
-        $xml = '';
-        $hasTextBefore = false;
-
-        foreach ($chunks as $index => $chunk) {
-            if ($chunk === '') {
-                continue;
-            }
-
-            if (preg_match($separatorPattern, $chunk)) {
-                if ($hasTextBefore && $this->hasTextAfter($chunks, $index)) {
-                    $xml .= '<w:tab/>';
-                } else {
-                    $xml .= '<w:t xml:space="preserve">' . $this->e($chunk) . '</w:t>';
-                }
-
-                continue;
-            }
-
-            $xml .= '<w:t xml:space="preserve">' . $this->e($chunk) . '</w:t>';
-            $hasTextBefore = true;
-        }
-
-        return $xml !== '' ? $xml : '<w:t xml:space="preserve"></w:t>';
-    }
-
-    private function hasTextAfter(array $chunks, int $index): bool
-    {
-        $nbsp = html_entity_decode('&nbsp;', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $separatorPattern = '/^(\t+|[ ' . preg_quote($nbsp, '/') . ']{2,})$/u';
-
-        for ($i = $index + 1; $i < count($chunks); $i++) {
-            if ($chunks[$i] !== '' && ! preg_match($separatorPattern, $chunks[$i])) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function plainCell(array $lines, int $width, array $options = []): string
