@@ -376,8 +376,12 @@
         font-size: 10pt;
     }
 
+    .customer-meta p {
+        margin: 0;
+    }
+
     .customer {
-        margin-top: 5px;
+        margin-top: 16px;
         font-size: 10pt;
     }
 

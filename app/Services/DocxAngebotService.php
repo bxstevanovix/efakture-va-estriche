@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\EditorSpacing;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -117,7 +118,8 @@ class DocxAngebotService
     ' . $this->paragraph((string) ($data['ort'] ?? ''), ['after' => 0]) . '
     ' . $this->horizontalLine(3500) . '
     ' . $this->metaTable((string) ($data['uid'] ?? ''), (string) ($data['date'] ?? '')) . '
-    ' . ($bvh !== '' ? $this->paragraph('BVH. ' . $bvh, ['before' => 200, 'after' => 30]) : '') . '
+    ' . $this->spacer(240) . '
+    ' . ($bvh !== '' ? $this->paragraph('BVH. ' . $bvh, ['after' => 30]) : '') . '
     ' . ($auftragsnr !== '' ? $this->paragraph($auftragsnr, ['after' => 30]) : '') . '
     ' . $this->richParagraph($titleRuns, ['after' => 70]) . '
     ' . $itemsTable . '
@@ -204,7 +206,7 @@ class DocxAngebotService
   <w:tblPr><w:tblW w:w="5000" w:type="pct"/></w:tblPr>
   <w:tblGrid><w:gridCol w:w="5200"/><w:gridCol w:w="5200"/></w:tblGrid>
   <w:tr>
-    ' . $this->plainCell([$left], 0) . '
+    ' . $this->plainCell([$left], 0, ['cell_left' => 0]) . '
     ' . $this->plainCell(['Datum: ' . $date], 5200, ['align' => 'right']) . '
   </w:tr>
 </w:tbl>';
@@ -473,8 +475,10 @@ class DocxAngebotService
                 $paragraphs .= $this->richParagraph($runs, [
                     'before' => ($first && $paragraphs === '') ? 220 : 0,
                     'after' => 35,
-                    'left' => 520,
-                    'hanging' => 180,
+                    // Match Quill's 20px list indentation in the PDF/DOCX output.
+                    // With a hanging indent Word positions the number at left - hanging.
+                    'left' => 900,
+                    'hanging' => 360,
                 ]);
             }
 
@@ -651,7 +655,9 @@ class DocxAngebotService
 
     private function normalizeTextNode(string $text): string
     {
-        return html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return EditorSpacing::normalizeText(
+            html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+        );
     }
 
     private function runsHaveContent(array $runs): bool
@@ -746,7 +752,7 @@ class DocxAngebotService
   <w:tcPr>
     <w:tcW w:w="' . $width . '" w:type="dxa"/>
     <w:tcMar>
-      <w:left w:w="100" w:type="dxa"/>
+      <w:left w:w="' . (int) ($options['cell_left'] ?? 100) . '" w:type="dxa"/>
       <w:right w:w="0" w:type="dxa"/>
     </w:tcMar>
   </w:tcPr>

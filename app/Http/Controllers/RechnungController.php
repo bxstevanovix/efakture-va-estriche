@@ -16,6 +16,7 @@ use App\Models\Beschreibung;
 use App\Models\CustomerInvoice;
 use App\Services\DocxAngebotService;
 use App\Services\LibreOfficePdfConverter;
+use App\Support\EditorSpacing;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -132,7 +133,8 @@ class RechnungController extends Controller
         $auftragsnr = $data['auftragsnr'] ?? null;
         $rechnungNr = $data['rechnung_nr'] ?? null;
         $ausführungszeit = $data['ausführungszeit'] ?? null;
-        $invoiceNote = $data['invoice_note'] ?? null;
+        $invoiceNote = EditorSpacing::normalizeHtml($data['invoice_note'] ?? null);
+        $data['invoice_note'] = $invoiceNote;
         $items = $this->normalizeItems($data['items'] ?? []);
         $totalValue = $items
             ? $this->calculateTotal($items, $data)

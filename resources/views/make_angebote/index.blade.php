@@ -323,10 +323,23 @@
 	<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 	<script>
 		$(function() {
+			const editorTabSpaces = '    ';
 			const quill = new Quill('#editor', {
 				theme: 'snow',
 				placeholder: 'Optionaler Text...',
 				modules: {
+					keyboard: {
+						bindings: {
+							tabAsSpaces: {
+								key: 9,
+								handler(range) {
+									this.quill.insertText(range.index, editorTabSpaces, 'user');
+									this.quill.setSelection(range.index + editorTabSpaces.length, 0, 'silent');
+									return false;
+								}
+							}
+						}
+					},
 					toolbar: [
 						['bold', 'italic', 'underline'],
 						[{ 'size': ['small', false, 'large', 'huge'] }],
@@ -334,6 +347,16 @@
 						['clean']
 					]
 				}
+			});
+
+			quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
+				delta.ops.forEach(op => {
+					if (typeof op.insert === 'string') {
+						op.insert = op.insert.replace(/\t/g, editorTabSpaces);
+					}
+				});
+
+				return delta;
 			});
 
 			const datatableUrl = "{{ route('angebote.datatable') }}";
