@@ -18,7 +18,7 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
     public function handle(): int
     {
         $sourceDatabase = trim((string) $this->option('source-database'));
-        $targetDatabase = trim((string) ($this->option('target-database') ?: config('database.connections.' . config('database.default') . '.database')));
+        $targetDatabase = trim((string) ($this->option('target-database') ?: config('database.connections.'.config('database.default').'.database')));
         $chunkSize = max(1, (int) $this->option('chunk'));
 
         if ($sourceDatabase === '' || $targetDatabase === '') {
@@ -40,7 +40,7 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
 
         if ($this->option('truncate')) {
             DB::statement('SET FOREIGN_KEY_CHECKS=0');
-            DB::statement('TRUNCATE TABLE ' . $this->qualifiedTable($targetDatabase, 'customer_invoices'));
+            DB::statement('TRUNCATE TABLE '.$this->qualifiedTable($targetDatabase, 'customer_invoices'));
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
             $this->warn("Target tabela {$targetDatabase}.customer_invoices je obrisana prije kopiranja.");
         }
@@ -58,6 +58,9 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
                 'company',
                 'status',
                 'price',
+                'price_part',
+                'debt',
+                'currency',
                 'pdf',
                 'date_start',
                 'date_end',
@@ -66,6 +69,7 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
                 'updated_at',
                 'deleted_at',
                 'address',
+                'square_meters',
             ])
             ->orderBy('id')
             ->chunkById($chunkSize, function ($invoices) use ($target, $firmeTable, &$copied, &$missingCompanies, $bar) {
@@ -78,8 +82,10 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
                 $companyMap = $oldCompanyIds->isEmpty()
                     ? collect()
                     : DB::table(DB::raw($firmeTable))
-                        ->whereIn('old_id', $oldCompanyIds)
-                        ->pluck('id', 'old_id');
+                        ->join($target->getConnection()->getDatabaseName().'.legacy_company_mappings as mappings', 'mappings.firma_id', '=', 'firme.id')
+                        ->where('mappings.source', 'customer')
+                        ->whereIn('mappings.legacy_id', $oldCompanyIds)
+                        ->pluck('firme.id', 'mappings.legacy_id');
 
                 $rows = $invoices->map(function ($invoice) use ($companyMap, &$missingCompanies) {
                     $company = null;
@@ -93,12 +99,16 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
                     }
 
                     return [
-                        'id' => $invoice->id,
+                        'legacy_id' => $invoice->id,
                         'id_invoice' => $invoice->id_invoice,
                         'text' => $invoice->text,
                         'company' => $company,
                         'status' => $invoice->status,
                         'price' => $invoice->price,
+                        'price_part' => $invoice->price_part,
+                        'debt' => $invoice->debt,
+                        'currency' => $invoice->currency,
+                        'square_meters' => $invoice->square_meters,
                         'pdf' => $invoice->pdf,
                         'date_start' => $invoice->date_start,
                         'date_end' => $invoice->date_end,
@@ -110,12 +120,16 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
                     ];
                 })->all();
 
-                $target->upsert($rows, ['id'], [
+                $target->upsert($rows, ['legacy_id'], [
                     'id_invoice',
                     'text',
                     'company',
                     'status',
                     'price',
+                    'price_part',
+                    'debt',
+                    'currency',
+                    'square_meters',
                     'pdf',
                     'date_start',
                     'date_end',
@@ -135,7 +149,7 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
         $this->info("Kopirano/upsertovano {$copied} faktura iz {$sourceDatabase}.truck_invoices u {$targetDatabase}.customer_invoices.");
 
         if ($missingCompanies > 0) {
-            $this->warn("Za {$missingCompanies} faktura nije pronađena firma u {$targetDatabase}.firme preko old_id, pa je company upisan kao null.");
+            $this->warn("Za {$missingCompanies} faktura nije pronađena legacy mapa firme, pa je company upisan kao null.");
         }
 
         return self::SUCCESS;
@@ -143,11 +157,11 @@ class CopyTruckInvoicesToCustomerInvoices extends Command
 
     private function qualifiedTable(string $database, string $table): string
     {
-        return $this->quoteIdentifier($database) . '.' . $this->quoteIdentifier($table);
+        return $this->quoteIdentifier($database).'.'.$this->quoteIdentifier($table);
     }
 
     private function quoteIdentifier(string $identifier): string
     {
-        return '`' . str_replace('`', '``', $identifier) . '`';
+        return '`'.str_replace('`', '``', $identifier).'`';
     }
 }

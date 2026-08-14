@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\LegacyCompanyImporter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,7 @@ class CopyTruckCompaniesProcurementToFirme extends Command
     public function handle(): int
     {
         $sourceDatabase = trim((string) $this->option('source-database'));
-        $targetDatabase = trim((string) ($this->option('target-database') ?: config('database.connections.' . config('database.default') . '.database')));
+        $targetDatabase = trim((string) ($this->option('target-database') ?: config('database.connections.'.config('database.default').'.database')));
         $chunkSize = max(1, (int) $this->option('chunk'));
 
         if ($sourceDatabase === '' || $targetDatabase === '') {
@@ -48,46 +49,34 @@ class CopyTruckCompaniesProcurementToFirme extends Command
                 'jib',
                 'phone',
                 'email',
+                'currency',
                 'deleted_at',
                 'created_at',
                 'updated_at',
             ])
             ->orderBy('id')
             ->chunkById($chunkSize, function ($companies) use ($target, &$copied, $bar) {
-                $rows = $companies->map(fn ($company) => [
-                    'old_id' => $company->id,
-                    'name' => $company->name,
-                    'address' => $company->address,
-                    'jib' => $company->jib,
-                    'uid' => null,
-                    'ort' => null,
-                    'phone' => $company->phone,
-                    'email' => $company->email,
-                    'deleted_at' => $company->deleted_at,
-                    'created_at' => $company->created_at,
-                    'updated_at' => $company->updated_at,
-                ])->all();
-
-                $target->insert($rows);
-
-                $copied += count($rows);
-                $bar->advance(count($rows));
+                foreach ($companies as $company) {
+                    LegacyCompanyImporter::import($company, 'supplier', $target->getConnection()->getDatabaseName());
+                    $copied++;
+                    $bar->advance();
+                }
             }, 'id', 'id');
 
         $bar->finish();
         $this->newLine(2);
-        $this->info("Dodato {$copied} firmi iz {$sourceDatabase}.truck_companies_procurement u {$targetDatabase}.firme. Novi id je auto-increment, stari id je upisan u old_id.");
+        $this->info("Obrađeno {$copied} firmi iz {$sourceDatabase}.truck_companies_procurement. Poklopljeni nazivi su spojeni, a stari ID-evi mapirani.");
 
         return self::SUCCESS;
     }
 
     private function qualifiedTable(string $database, string $table): string
     {
-        return $this->quoteIdentifier($database) . '.' . $this->quoteIdentifier($table);
+        return $this->quoteIdentifier($database).'.'.$this->quoteIdentifier($table);
     }
 
     private function quoteIdentifier(string $identifier): string
     {
-        return '`' . str_replace('`', '``', $identifier) . '`';
+        return '`'.str_replace('`', '``', $identifier).'`';
     }
 }
