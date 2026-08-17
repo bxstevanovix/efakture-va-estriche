@@ -286,11 +286,25 @@ class CustomerInvoicesController extends Controller
 
     private function normalizePublicPdfPath(?string $path): string
     {
-        $path = ltrim((string) $path, '/');
+        $path = rawurldecode(trim((string) $path));
+        $path = str_replace('\\', '/', $path);
 
-        foreach (['storage/', 'public/'] as $prefix) {
+        // Stari zapisi mogu sadržati URL ili apsolutnu serversku putanju.
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $path = (string) parse_url($path, PHP_URL_PATH);
+        }
+
+        foreach (['/storage/app/public/', '/public/storage/'] as $marker) {
+            if (($position = strpos($path, $marker)) !== false) {
+                return ltrim(substr($path, $position + strlen($marker)), '/');
+            }
+        }
+
+        $path = ltrim($path, '/');
+
+        foreach (['storage/app/public/', 'public/storage/', 'storage/', 'public/'] as $prefix) {
             if (str_starts_with($path, $prefix)) {
-                $path = substr($path, strlen($prefix));
+                return ltrim(substr($path, strlen($prefix)), '/');
             }
         }
 
