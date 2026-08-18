@@ -413,8 +413,9 @@ class SupplierInvoicesController extends Controller
                 return  '€ ' . $entity->price;
                 
             })->editColumn('company', function ($entity) {
-                $company = Firma::where('id', $entity->company)->first();    
-                return $company['name'];  
+                $company = Firma::withTrashed()->find($entity->company);
+
+                return $company?->name ?? '---';
             
             })->editColumn('date_start',function($entity){
                 $date = Carbon::parse($entity->date_start);

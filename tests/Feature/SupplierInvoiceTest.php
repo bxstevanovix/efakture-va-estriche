@@ -59,4 +59,26 @@ class SupplierInvoiceTest extends TestCase
         $this->assertSame(0.5, (float) $invoice->price);
         $this->assertSame(0.5, (float) $invoice->debt);
     }
+
+    public function test_reports_datatable_handles_legacy_invoice_without_company(): void
+    {
+        $user = User::factory()->create();
+        SupplierInvoice::create([
+            'id_invoice' => 'LEGACY-ER-001',
+            'company' => null,
+            'date_start' => '2026-01-01',
+            'date_end' => '2026-01-31',
+            'price' => 100,
+            'debt' => 100,
+            'currency' => 'EUR',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/supplier-invoices/reports/datatable', [
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+        ]);
+
+        $response->assertOk()->assertJsonPath('data.0.company', '---');
+    }
 }
