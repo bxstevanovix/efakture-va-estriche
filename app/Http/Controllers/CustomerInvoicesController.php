@@ -61,6 +61,13 @@ class CustomerInvoicesController extends Controller
             })->editColumn('date_end',function($entity){
                 $date = Carbon::parse($entity->date_end);
                 return $date->format('d-m-Y');
+            })->orderColumn('date_end', function ($query, $order) {
+                $direction = strtolower($order) === 'asc' ? 'asc' : 'desc';
+
+                $query
+                    ->reorder('status', 'asc')
+                    ->orderBy('date_end', $direction)
+                    ->orderBy('id', $direction);
             })->rawColumns(['actions', 'company', 'image', 'drivers', 'trucks'])
             ->setRowAttr([
                 'data-id' => function($entity) {
@@ -238,8 +245,7 @@ class CustomerInvoicesController extends Controller
     public function viewPdf($id)
     {
         $faktura = Entity::findOrFail($id);
-        $pdfPath = $this->normalizePublicPdfPath($faktura->pdf);
-        $path = Storage::disk('public')->path($pdfPath);
+        $path = $this->resolvePdfPath($faktura->pdf);
         $filename = 'Rechnung_' . Str::slug(str_replace('/', '-', $faktura->id_invoice), '-') . '.pdf';
 
         if (!file_exists($path)) {
@@ -270,8 +276,7 @@ class CustomerInvoicesController extends Controller
     public function pdfFile($id)
     {
         $faktura = Entity::findOrFail($id);
-        $pdfPath = $this->normalizePublicPdfPath($faktura->pdf);
-        $path = Storage::disk('public')->path($pdfPath);
+        $path = $this->resolvePdfPath($faktura->pdf);
         $filename = 'Rechnung_' . Str::slug(str_replace('/', '-', $faktura->id_invoice), '-') . '.pdf';
 
         if (!file_exists($path)) {
@@ -309,6 +314,18 @@ class CustomerInvoicesController extends Controller
         }
 
         return $path;
+    }
+
+    private function resolvePdfPath(?string $path): string
+    {
+        $path = $this->normalizePublicPdfPath($path);
+
+        // Legacy fakture su čuvane direktno u public/data direktoriju.
+        if (str_starts_with($path, 'data/')) {
+            return public_path($path);
+        }
+
+        return Storage::disk('public')->path($path);
     }
 
     private function copyRechnungPdfToCustomerInvoice(?int $rechnungId, Entity $invoice): void
