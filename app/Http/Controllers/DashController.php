@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Models\CustomerInvoice;
-use App\Models\Firma;
 use App\Models\SupplierInvoice;
 
 class DashController extends Controller
@@ -92,6 +91,7 @@ class DashController extends Controller
         $selectedYear = $this->resolveDashboardYear($request);
         $dateStart = Carbon::parse($request->date_start)->format('Y-m-d');
         $query = CustomerInvoice::query()
+            ->with(['firma' => fn ($query) => $query->withTrashed()])
             ->where('status', 0)
             ->whereYear('date_end', $selectedYear)
             ->whereDate('date_end', $dateStart)
@@ -107,8 +107,7 @@ class DashController extends Controller
                 }
                 
             })->editColumn('company', function ($entity) {
-                $company = Firma::where('id', $entity->company)->first();    
-                return $company['name'];  
+                return $entity->firma?->name ?? '---';
             })->rawColumns(['price'])
             ->setRowAttr([
                 'data-id' => function($entity) {
@@ -126,6 +125,7 @@ class DashController extends Controller
         $selectedYear = $this->resolveDashboardYear($request);
         $dateStart = Carbon::parse($request->date_start1)->format('Y-m-d');
         $query = SupplierInvoice::query()
+            ->with(['firma' => fn ($query) => $query->withTrashed()])
             ->where('status', 0)
             ->whereYear('date_end', $selectedYear)
             ->whereDate('date_end', $dateStart)
@@ -141,8 +141,7 @@ class DashController extends Controller
                 }
                 
             })->editColumn('company', function ($entity) {
-                $company = Firma::where('id', $entity->company)->first();    
-                return $company['name'];  
+                return $entity->firma?->name ?? '---';
             })->rawColumns(['price'])
             ->setRowAttr([
                 'data-id' => function($entity) {
