@@ -245,7 +245,8 @@ class CustomerInvoicesController extends Controller
     public function viewPdf($id)
     {
         $faktura = Entity::findOrFail($id);
-        $path = $this->resolvePdfPath($faktura->pdf);
+        $pdfPath = $this->normalizePublicPdfPath($faktura->pdf);
+        $path = $this->resolvePdfPath($pdfPath);
         $filename = 'Rechnung_' . Str::slug(str_replace('/', '-', $faktura->id_invoice), '-') . '.pdf';
 
         if (!file_exists($path)) {
@@ -255,6 +256,13 @@ class CustomerInvoicesController extends Controller
         if ($this->request->boolean('download')) {
             return response()->download($path, $filename, [
                 'Content-Type' => 'application/pdf',
+            ]);
+        }
+
+        if (str_starts_with($pdfPath, 'procurement/')) {
+            return response()->file($path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
             ]);
         }
 

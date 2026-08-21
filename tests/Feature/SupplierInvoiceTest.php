@@ -6,6 +6,7 @@ use App\Models\Firma;
 use App\Models\SupplierInvoice;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SupplierInvoiceTest extends TestCase
@@ -80,5 +81,48 @@ class SupplierInvoiceTest extends TestCase
         ]);
 
         $response->assertOk()->assertJsonPath('data.0.company', '---');
+    }
+
+    public function test_legacy_procurement_pdf_is_opened_directly(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('procurement/2026/07/legacy.pdf', '%PDF-1.4 legacy');
+
+        $invoice = SupplierInvoice::create([
+            'id_invoice' => 'LEGACY-PDF',
+            'date_start' => '2026-07-01',
+            'date_end' => '2026-07-31',
+            'price' => 100,
+            'pdf' => 'procurement/2026/07/legacy.pdf',
+        ]);
+
+        $response = $this->actingAs(User::factory()->create())
+            ->get(route('supplier-invoices.view', $invoice));
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'inline; filename="Rechnung_legacy-pdf.pdf"');
+    }
+
+    public function test_new_supplier_pdf_still_uses_pdf_viewer(): void
+    {
+        Storage::fake('public');
+        $path = 'eingangsrechnungen/7-strabag-ag/099-99/polizze-9.pdf';
+        Storage::disk('public')->put($path, '%PDF-1.4 new');
+
+        $invoice = SupplierInvoice::create([
+            'id_invoice' => '099/99',
+            'date_start' => '2026-07-01',
+            'date_end' => '2026-07-31',
+            'price' => 100,
+            'pdf' => $path,
+        ]);
+
+        $response = $this->actingAs(User::factory()->create())
+            ->get(route('supplier-invoices.view', $invoice));
+
+        $response->assertOk()
+            ->assertViewIs('pdf.viewer')
+            ->assertViewHas('pdfUrl', route('supplier-invoices.pdf', $invoice));
     }
 }
